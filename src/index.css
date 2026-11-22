@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand: 17 24 39;
+  --brand2: 245 158 11;
+  --onbrand: 255 255 255;
+  --onbrand2: 17 24 39;
+  --radius: 14px;
+  --font-sans: 'Plus Jakarta Sans', 'IBM Plex Sans Arabic', system-ui, sans-serif;
+  --font-display: var(--font-sans);
+}
+
+html, body, #root { height: 100%; }
+body {
+  @apply bg-gray-50 text-gray-900 antialiased;
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+button { -webkit-tap-highlight-color: transparent; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
+.tabular-nums { font-variant-numeric: tabular-nums; }
+
+@keyframes fade { from { opacity: 0 } to { opacity: 1 } }
+@keyframes up { from { transform: translateY(24px); opacity: 0 } to { transform: none; opacity: 1 } }
+@keyframes down { from { transform: translateY(-12px); opacity: 0 } to { transform: none; opacity: 1 } }
+@keyframes pop { 0% { transform: scale(.6); opacity: 0 } 60% { transform: scale(1.08) } 100% { transform: scale(1); opacity: 1 } }
+@keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 rgb(var(--brand) / .45) } 100% { box-shadow: 0 0 0 14px rgb(var(--brand) / 0) } }
+
+@media print {
+  .no-print { display: none !important; }
+  body { background: white; }
+}

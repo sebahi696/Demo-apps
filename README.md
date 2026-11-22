@@ -1,0 +1,103 @@
+# Demo Studio — try-before-you-buy app machine
+
+A prospect answers a short questionnaire and gets a **working, branded app**: a customer PWA, a staff mode and an owner admin panel. They use it like it's theirs. Then you build the real, custom app.
+
+Industries: **Restaurant · Café · Retail** (Salon, Clinic, Gym shown as "coming soon").
+Languages: **English + Arabic** (full RTL).
+Hosting: **GitHub Pages, free**. There is no server and no database.
+
+---
+
+## Run it locally
+
+```bash
+npm install
+npm run dev        # http://localhost:5173
+npm run build      # production build in dist/
+npm run preview    # serve the build
+```
+
+## Put it online (GitHub Pages)
+
+1. Create a GitHub repo and push this folder to the `main` branch.
+2. In the repo, go to **Settings → Pages → Source** and choose **GitHub Actions**.
+3. Every push to `main` builds and publishes to `https://<user>.github.io/<repo>/`.
+
+The workflow is in `.github/workflows/deploy.yml`. It sets the base path to the repo name automatically.
+
+## Make it yours
+
+Edit **`src/platform.config.ts`**:
+
+| Setting | What it does |
+|---|---|
+| `name`, `tagline` | Your agency / product name on the landing page |
+| `salesWhatsApp`, `salesEmail` | "Talk to us" buttons in the demo, the plan page and the expired screen |
+| `trialDays` | How long a demo stays open (default 14) |
+| `salesPasscode` | Passcode for the Sales console at `#/sales` (default `2468`) |
+| `leadWebhook` | Optional Formspree / Make / Zapier / Google Apps Script URL. Every questionnaire is POSTed there as JSON, so you get leads by email or in a sheet |
+
+Replace `public/icon.svg` and the PNGs with your own logo.
+
+---
+
+## How it works
+
+```
+Landing (#/)  →  Questionnaire (#/start)  →  Demo (#/d/<id>/app | staff | owner)
+                                               ↑
+Sales console (#/sales)  —  share links (#/i/<config>) open a fresh copy on any phone
+```
+
+* **Everything runs in the browser.** Each demo is stored in the device's IndexedDB. Tabs on the same device sync live, so you can have the Owner panel in one tab and the Customer app in another.
+* **Share links** carry the demo's configuration (brand, features, settings) inside the URL. Opening one on a phone creates that client's own copy with sample data.
+* **Role switcher** (top bar): Customer / Staff (PIN `1234`) / Owner. One person can play every part.
+* **Guided tour** (checklist icon): 10 tasks covering every feature. What the client actually used shows up in **My app plan** and in the Sales console.
+* **Simulate store activity** (⋯ menu): orders move through the statuses by themselves.
+
+### Features in the demo
+
+**Customer app (PWA):** home with banners, deals with countdowns, loyalty card · menu/shop with search, option groups (sizes, add-ons, colors), stock · cart, promo codes, reward vouchers · checkout with delivery zones, fees, minimum order, pickup time, dine-in table, VAT, fake card / Apple Pay / Google Pay / cash · live order tracking · points, stamp card, VIP tiers, rewards catalog, voucher QR · scan-to-earn (staff dynamic QR + counter static QR with daily limit, cooldown and PIN) · table / visit booking · notifications inbox · language switch · install guide · account deletion.
+
+**Staff mode:** live order board with a sound for new orders · award points via a single-use 90-second QR, or by customer search · scan or validate vouchers · bookings (confirm / arrived / no-show).
+
+**Owner panel:** dashboard (revenue chart, best sellers, channels, peak hours) · orders + CSV · catalog editor (photos, AR/EN, options, stock, categories) · customers + points adjustments + CSV · loyalty rules, tiers, rewards, printable counter QR · deals & flash deals · push campaigns with audience targeting · bookings rules · branding (logo, colors, fonts, corners, banners) with live preview · staff PINs · settings with **feature flags for every module** · "My app plan" summary to print or PDF.
+
+---
+
+## Code map
+
+```
+src/
+  platform.config.ts     ← your settings
+  lib/
+    types.ts             data model (Demo = config + data)
+    presets.ts           industries: modules, wording, sample catalog  ← add industries here
+    seed.ts              builds a demo from questionnaire answers (+ 45 days of history)
+    ops.ts               business logic: orders, loyalty, QR tokens, vouchers, bookings, campaigns
+    store.ts             zustand + IndexedDB + cross-tab sync
+    theme.ts / i18n.ts   per-demo colors and fonts, EN/AR
+  pages/
+    Landing, Wizard, Sales, ImportDemo, DemoLayout
+    customer/  staff/  owner/
+```
+
+### Add a new industry (e.g. salon)
+1. Add `'salon'` to `Industry` in `lib/types.ts`.
+2. Copy the café block in `lib/presets.ts`, change the wording (`terms`), modules, categories, products, rewards and deals.
+3. Add it to `PRESETS` and remove it from `COMING_SOON`.
+
+Bookings already work. For per-staff calendars (salon/clinic), extend `reservations` in `ops.ts`.
+
+### When a client signs
+The demo code is the starting point for the real app:
+* Move `ops.ts` into a real backend (each function becomes an API endpoint) with PostgreSQL + tenant isolation, or a hosted backend like Supabase/Firebase.
+* Replace the store's IndexedDB storage with API calls.
+* Wrap the customer app with Capacitor for the App Store / Google Play, or rebuild native screens on the same backend.
+* Connect real payments (Stripe Connect or a local gateway) and real push notifications (FCM).
+
+## Known limits (by design, it's a demo)
+* Data lives on one device. A share link creates a copy, not a synced account.
+* Payments are simulated. No money moves.
+* The Sales passcode is client-side only. Don't put secrets in it.
+* On iPhone, PWA push notifications only work after "Add to Home Screen" (iOS 16.4+). In-app notifications always work.
