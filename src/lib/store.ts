@@ -3,6 +3,7 @@ import { persist, createJSONStorage, type StateStorage } from 'zustand/middlewar
 import { immer } from 'zustand/middleware/immer';
 import { get as idbGet, set as idbSet, del as idbDel } from 'idb-keyval';
 import type { Demo, Lang } from './types';
+import { migrateConfig, migrateData } from './seed';
 
 // ───────────────────────────────────────────────────────────────
 // Storage: IndexedDB (room for photos, survives reloads).
@@ -37,6 +38,7 @@ interface State {
   demos: Record<string, Demo>;
   toasts: Toast[];
   setHydrated: () => void;
+  migrateAll: () => void;
   setLang: (l: Lang) => void;
   setSimulate: (v: boolean) => void;
   addDemo: (d: Demo) => void;
@@ -55,6 +57,13 @@ export const useStore = create<State>()(
       demos: {},
       toasts: [],
       setHydrated: () => set((s) => void (s.hydrated = true)),
+      migrateAll: () =>
+        set((s) => {
+          for (const d of Object.values(s.demos)) {
+            migrateConfig(d.config);
+            migrateData(d.data, d.config);
+          }
+        }),
       setLang: (l) => set((s) => void (s.lang = l)),
       setSimulate: (v) => set((s) => void (s.simulate = v)),
       addDemo: (d) => set((s) => void (s.demos[d.config.id] = d)),
@@ -75,7 +84,10 @@ export const useStore = create<State>()(
       name: 'demo-studio-v1',
       storage: createJSONStorage(() => idbStorage),
       partialize: (s) => ({ lang: s.lang, simulate: s.simulate, demos: s.demos }) as unknown as State,
-      onRehydrateStorage: () => (state) => state?.setHydrated(),
+      onRehydrateStorage: () => (state) => {
+        state?.migrateAll();
+        state?.setHydrated();
+      },
     },
   ),
 );

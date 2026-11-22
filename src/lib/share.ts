@@ -1,6 +1,6 @@
 import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from 'lz-string';
 import type { DemoConfig } from './types';
-import { buildData } from './seed';
+import { buildData, migrateConfig } from './seed';
 import { uid, DAY } from './utils';
 import { PLATFORM } from '../platform.config';
 
@@ -17,7 +17,7 @@ export function shareLink(cfg: DemoConfig) {
 export function importFromPayload(payload: string) {
   const json = decompressFromEncodedURIComponent(payload);
   if (!json) throw new Error('bad link');
-  const src = JSON.parse(json) as DemoConfig;
+  const src = migrateConfig(JSON.parse(json) as DemoConfig);
   const now = Date.now();
   const config: DemoConfig = {
     ...src, id: uid('d'), createdAt: now, expiresAt: Math.max(src.expiresAt, now + PLATFORM.trialDays * DAY),

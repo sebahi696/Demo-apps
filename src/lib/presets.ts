@@ -51,7 +51,7 @@ const p = (
   extra: Partial<Product> = {},
 ): Product => ({
   id: 'p' + ++n, categoryId, name: { en, ar }, desc: { en: descEn, ar: descAr }, price, emoji, bg,
-  active: true, stock: null, groups: [], ...extra,
+  active: true, stock: null, groups: [], tags: [], ...extra,
 });
 
 // ── Shared option groups ────────────────────────────────────────
@@ -90,7 +90,11 @@ const foodZones: DeliveryZone[] = [
 const allOn: Modules = {
   ordering: true, delivery: true, pickup: true, dineIn: true, loyaltyPoints: true, loyaltyStamps: true, vipTiers: true,
   staticQr: true, deals: true, campaigns: true, reservations: true,
+  wallet: true, tips: true, reviews: true, referrals: true, tableQr: true,
 };
+
+const tag = (list: Product[], map: Record<string, Partial<Product>>) =>
+  list.forEach((x) => map[x.id] && Object.assign(x, map[x.id]));
 
 // ── RESTAURANT ──────────────────────────────────────────────────
 n = 100;
@@ -106,7 +110,7 @@ const restaurant: Preset = {
   font: 'modern',
   radius: 'soft',
   hours: ['11:00', '23:30'],
-  modules: { ...allOn, loyaltyStamps: false },
+  modules: { ...allOn, loyaltyStamps: false, wallet: false },
   terms: {
     catalog: { en: 'Menu', ar: 'القائمة' },
     reserve: { en: 'Book a table', ar: 'احجز طاولة' },
@@ -257,7 +261,7 @@ const retail: Preset = {
   font: 'modern',
   radius: 'sharp',
   hours: ['10:00', '21:00'],
-  modules: { ...allOn, dineIn: false, loyaltyStamps: false },
+  modules: { ...allOn, dineIn: false, loyaltyStamps: false, tips: false, tableQr: false },
   terms: {
     catalog: { en: 'Shop', ar: 'المتجر' },
     reserve: { en: 'Book a styling visit', ar: 'احجز جلسة تنسيق' },
@@ -319,7 +323,40 @@ const retail: Preset = {
   reservations: { slotMinutes: 45, capacityPerSlot: 2, maxParty: 4 },
 };
 
+tag(restaurant.products, {
+  p101: { tags: ['bestseller'] }, p102: { tags: ['limited'] }, p103: { tags: ['spicy'] }, p104: { tags: ['healthy', 'glutenFree'] },
+  p107: { tags: ['vegan', 'healthy'] }, p109: { tags: ['vegan', 'healthy'] }, p111: { tags: ['spicy', 'vegetarian'] }, p112: { tags: ['vegan', 'glutenFree'] },
+  p113: { tags: ['vegetarian'] }, p115: { tags: ['vegan'] }, p117: { tags: ['vegan', 'kids'] },
+});
+tag(cafe.products, {
+  p203: { tags: ['bestseller'] }, p205: { tags: ['bestseller'] }, p209: { tags: ['vegan', 'healthy'] }, p210: { tags: ['vegetarian', 'healthy', 'kids'] },
+  p212: { tags: ['vegan', 'sugarFree'] }, p213: { tags: ['vegetarian'] }, p215: { tags: ['vegetarian'] }, p217: { tags: ['vegetarian'] }, p218: { tags: ['kids'] },
+});
+tag(retail.products, {
+  p301: { tags: ['bestseller', 'organic'], compareAt: 65 }, p303: { tags: ['limited'] }, p305: { tags: ['bestseller'] }, p307: { compareAt: 39, tags: ['eco'] },
+  p309: { compareAt: 119 }, p311: { tags: ['eco'] }, p313: { compareAt: 35 }, p316: { tags: ['limited'] },
+});
+
 export const PRESETS: Record<Industry, Preset> = { restaurant, cafe, retail };
+
+export const TAGS: Record<string, { en: string; ar: string; icon: string }> = {
+  vegan: { en: 'Vegan', ar: 'نباتي صرف', icon: '🌱' },
+  vegetarian: { en: 'Vegetarian', ar: 'نباتي', icon: '🥕' },
+  glutenFree: { en: 'Gluten-free', ar: 'خالٍ من الغلوتين', icon: '🌾' },
+  spicy: { en: 'Spicy', ar: 'حار', icon: '🌶️' },
+  healthy: { en: 'Healthy', ar: 'صحي', icon: '💚' },
+  kids: { en: 'Kids', ar: 'للأطفال', icon: '🧒' },
+  sugarFree: { en: 'Sugar-free', ar: 'بدون سكر', icon: '🚫🍬' },
+  organic: { en: 'Organic', ar: 'عضوي', icon: '🍃' },
+  bestseller: { en: 'Best seller', ar: 'الأكثر مبيعاً', icon: '🔥' },
+  limited: { en: 'Limited', ar: 'كمية محدودة', icon: '⏳' },
+  eco: { en: 'Eco', ar: 'صديق للبيئة', icon: '♻️' },
+};
+
+export const BRANCH_NAMES: L[] = [
+  { en: 'Downtown', ar: 'وسط المدينة' }, { en: 'Mall branch', ar: 'فرع المول' }, { en: 'Seaside', ar: 'الواجهة البحرية' },
+  { en: 'University', ar: 'الجامعة' }, { en: 'Airport road', ar: 'طريق المطار' }, { en: 'Uptown', ar: 'أعلى المدينة' },
+];
 
 export const COMING_SOON: { label: L; emoji: string }[] = [
   { label: { en: 'Salon & spa', ar: 'صالون وسبا' }, emoji: '💇' },

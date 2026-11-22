@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { Plus, Search, Upload, Trash2, Star, FolderCog, X } from 'lucide-react';
 import { useDemo } from '../../lib/demo';
 import { toast } from '../../lib/store';
-import { tourDone } from '../../lib/ops';
-import type { Category, OptionGroup, Product } from '../../lib/types';
+import { tourDone, restocked } from '../../lib/ops';
+import { TAGS } from '../../lib/presets';
+import type { Category, OptionGroup, Product, ProductTag } from '../../lib/types';
 import { resizeImage, uid } from '../../lib/utils';
 import { Badge, Button, Card, Field, Input, Modal, Select, Textarea, Thumb, Toggle, cx } from '../../components/ui';
 import { PageHead } from './OwnerApp';
@@ -20,7 +21,7 @@ export default function Catalog() {
 
   const blank = (): Product => ({
     id: 'u' + uid(), categoryId: cat !== 'all' ? cat : data.categories[0]?.id ?? '', name: { en: '', ar: '' }, desc: { en: '', ar: '' }, price: 0,
-    emoji: '🍽️', bg: BGS[0], active: true, stock: null, groups: [],
+    emoji: '🍽️', bg: BGS[0], active: true, stock: null, groups: [], tags: [],
   });
 
   return (
@@ -54,6 +55,8 @@ export default function Catalog() {
                 {p.popular && <Badge className="bg-amber-100 text-amber-800"><Star size={10} /> {tr('Popular', 'شائع')}</Badge>}
                 {p.stock !== null && <Badge className={p.stock === 0 ? 'bg-rose-100 text-rose-700' : p.stock <= 5 ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-600'}>{p.stock === 0 ? tr('Out of stock', 'نفد') : tr(`${p.stock} in stock`, `${p.stock} متوفر`)}</Badge>}
                 {!p.active && <Badge>{tr('Hidden', 'مخفي')}</Badge>}
+                {p.compareAt && p.compareAt > p.price && <Badge className="bg-rose-100 text-rose-700">{tr('Sale', 'تخفيض')}</Badge>}
+                {data.stockAlerts.includes(p.id) && <Badge className="bg-sky-100 text-sky-800">🔔 {tr('waiting', 'بانتظار')}</Badge>}
               </div>
             </div>
             <div onClick={(e) => e.stopPropagation()}>
@@ -78,7 +81,9 @@ function ProductEditor({ p: initial, onClose }: { p: Product; onClose: () => voi
     if (!p.name.en.trim()) return toast(tr('Add a name', 'أضف اسماً'), 'error');
     update((d) => {
       const i = d.data.products.findIndex((x) => x.id === p.id);
+      const wasOut = i >= 0 && d.data.products[i].stock === 0;
       if (i >= 0) d.data.products[i] = p;
+      if (wasOut && (p.stock === null || p.stock > 0)) restocked(d, p.id);
       else {
         d.data.products.unshift(p);
         tourDone(d, 'addProduct');
@@ -126,6 +131,9 @@ function ProductEditor({ p: initial, onClose }: { p: Product; onClose: () => voi
             <Field label={tr('Description (English)', 'الوصف (إنجليزي)')}><Textarea value={p.desc.en} onChange={(e) => set({ desc: { ...p.desc, en: e.target.value } })} className="!min-h-[64px]" /></Field>
             <Field label={tr('Description (Arabic)', 'الوصف (عربي)')}><Textarea dir="rtl" value={p.desc.ar ?? ''} onChange={(e) => set({ desc: { ...p.desc, ar: e.target.value } })} className="!min-h-[64px]" /></Field>
             <Field label={tr(`Price (${cfg.business.currency})`, `السعر (${cfg.business.currency})`)}><Input type="number" step="0.01" value={p.price} onChange={(e) => set({ price: parseFloat(e.target.value) || 0 })} /></Field>
+            <Field label={tr('Was (sale price shows crossed out)', 'السعر قبل التخفيض')} hint={tr('Leave empty if not on sale', 'اتركه فارغاً إن لم يكن مخفضاً')}>
+              <Input type="number" step="0.01" value={p.compareAt ?? ''} onChange={(e) => set({ compareAt: e.target.value ? parseFloat(e.target.value) : undefined })} />
+            </Field>
             <Field label={tr('Category', 'الفئة')}>
               <Select value={p.categoryId} onChange={(e) => set({ categoryId: e.target.value })}>
                 {data.categories.map((c) => <option key={c.id} value={c.id}>{c.emoji} {tl(c.name)}</option>)}
@@ -137,6 +145,16 @@ function ProductEditor({ p: initial, onClose }: { p: Product; onClose: () => voi
             <Toggle checked={!!p.popular} onChange={(v) => set({ popular: v })} label={tr('Popular', 'شائع')} />
             <Toggle checked={!!p.isNew} onChange={(v) => set({ isNew: v })} label={tr('“New” badge', 'شارة "جديد"')} />
             <Toggle checked={p.stock !== null} onChange={(v) => set({ stock: v ? 20 : null })} label={tr('Track stock', 'تتبع المخزون')} />
+          </div>
+          <div>
+            <div className="text-sm font-medium text-gray-700 mb-1.5">{tr('Labels (customers can filter by these)', 'الشارات (يمكن للزبائن التصفية بها)')}</div>
+            <div className="flex flex-wrap gap-1.5">
+              {(Object.keys(TAGS) as ProductTag[]).map((t) => {
+                const on = p.tags.includes(t);
+                return <button key={t} type="button" onClick={() => set({ tags: on ? p.tags.filter((x) => x !== t) : [...p.tags, t] })}
+                  className={cx('rounded-full px-2.5 py-1 text-xs font-semibold border', on ? 'bg-gray-900 text-white border-gray-900' : 'bg-white border-gray-200')}>{TAGS[t].icon} {tl(TAGS[t])}</button>;
+              })}
+            </div>
           </div>
           {p.stock !== null && <Field label={tr('Quantity in stock', 'الكمية المتوفرة')}><Input type="number" value={p.stock} onChange={(e) => set({ stock: Math.max(0, parseInt(e.target.value) || 0) })} className="!w-32" /></Field>}
         </div>

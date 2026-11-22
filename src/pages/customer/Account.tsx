@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Bell, Globe, Download, CalendarDays, Receipt, Trash2, ChevronRight, Pencil, Megaphone, Package, Gift, Info } from 'lucide-react';
+import { Bell, Globe, Download, CalendarDays, Receipt, Trash2, ChevronRight, Pencil, Megaphone, Package, Gift, Info, Wallet, Heart, Users, Cake, Copy } from 'lucide-react';
 import { useDemo } from '../../lib/demo';
 import { useStore, toast } from '../../lib/store';
-import { me, tierOf } from '../../lib/ops';
+import { me, tierOf, applyReferral, simulateFriendJoin, setBirthday } from '../../lib/ops';
 import { timeAgo } from '../../lib/utils';
 import { Button, Empty, Input, Modal, cx } from '../../components/ui';
 import { Screen } from './CustomerApp';
 import { InstallModal } from '../DemoLayout';
 
 export function Account() {
-  const { demo, cfg, data, tr, tl, terms, lang, update } = useDemo();
+  const { demo, cfg, data, tr, tl, terms, lang, update, m } = useDemo();
   const setLang = useStore((s) => s.setLang);
   const c = me(demo);
   const tier = tierOf(demo, c.lifetimePoints);
@@ -18,6 +18,8 @@ export function Account() {
   const [name, setName] = useState(c.name);
   const [install, setInstall] = useState(false);
   const [del, setDel] = useState(false);
+  const [refIn, setRefIn] = useState('');
+  const [bday, setBday] = useState(c.birthday ?? '');
   const [perm, setPerm] = useState(typeof Notification !== 'undefined' ? Notification.permission : 'denied');
   const orders = data.orders.filter((o) => o.customerId === c.id).length;
   const unread = data.notices.filter((n) => !n.read).length;
@@ -57,9 +59,64 @@ export function Account() {
 
       <div className="mt-5 rounded-app bg-white border border-gray-100 divide-y divide-gray-100">
         <Row icon={<Bell size={17} />} label={tr('Notifications', 'الإشعارات')} to="../inbox" right={unread ? <span className="h-6 min-w-6 px-1.5 rounded-full bg-rose-500 text-white text-xs font-bold grid place-items-center">{unread}</span> : undefined} />
+        {cfg.modules.wallet && <Row icon={<Wallet size={17} />} label={tr('Wallet & gift cards', 'المحفظة وبطاقات الهدايا')} to="../wallet" right={<span className="text-sm font-bold">{m(c.wallet)}</span>} />}
         {cfg.modules.ordering && <Row icon={<Receipt size={17} />} label={tr('My orders', 'طلباتي')} to="../orders" />}
+        {cfg.modules.ordering && <Row icon={<Heart size={17} />} label={tr('Favorites', 'المفضلة')} to="../menu?fav=1" right={<span className="text-sm text-gray-500">{data.favorites.length}</span>} />}
         {cfg.modules.reservations && <Row icon={<CalendarDays size={17} />} label={tl(terms.reserve)} to="../reserve" />}
       </div>
+
+      {cfg.modules.referrals && (
+        <div className="mt-4 rounded-app-lg bg-brand text-onbrand p-4">
+          <div className="flex items-center gap-2 font-bold"><Users size={18} /> {tr('Invite friends', 'ادعُ أصدقاءك')}</div>
+          <p className="text-sm opacity-80 mt-1">{tr(`You both get ${cfg.loyalty.referralBonus} points when a friend joins with your code.`, `يحصل كل منكما على ${cfg.loyalty.referralBonus} نقطة عندما ينضم صديق برمزك.`)}</p>
+          <div className="mt-3 flex items-center gap-2">
+            <span className="flex-1 rounded-app bg-white/15 px-3 py-2.5 font-mono font-bold tracking-wider" dir="ltr">{c.referralCode}</span>
+            <button className="h-11 w-11 rounded-app bg-white/20 grid place-items-center" onClick={async () => {
+              const text = tr(`Join me on ${tl(cfg.business.name)}! Use my code ${c.referralCode} and get ${cfg.loyalty.referralBonus} points.`, `انضم إليّ في ${tl(cfg.business.name)}! استخدم رمزي ${c.referralCode} واحصل على ${cfg.loyalty.referralBonus} نقطة.`);
+              if (navigator.share) navigator.share({ text }).catch(() => {});
+              else { await navigator.clipboard?.writeText(text).catch(() => {}); toast(tr('Invite copied', 'تم نسخ الدعوة')); }
+            }}><Copy size={18} /></button>
+          </div>
+          <button className="mt-2 text-xs underline opacity-80" onClick={() => { let n = ''; update((d) => void (n = simulateFriendJoin(d))); toast(tr(`${n} joined with your code — +${cfg.loyalty.referralBonus} points`, `انضم ${n} برمزك — +${cfg.loyalty.referralBonus} نقطة`)); }}>
+            {tr('Demo: simulate a friend joining', 'تجربة: محاكاة انضمام صديق')}
+          </button>
+          {!c.referredBy && (
+            <form className="mt-3 flex gap-2" onSubmit={(e) => {
+              e.preventDefault();
+              let r: ReturnType<typeof applyReferral> = { ok: false };
+              update((d) => void (r = applyReferral(d, refIn)));
+              if (r.ok) { toast(tr(`+${cfg.loyalty.referralBonus} points!`, `+${cfg.loyalty.referralBonus} نقطة!`)); setRefIn(''); } else toast(tl(r.error), 'error');
+            }}>
+              <Input value={refIn} onChange={(e) => setRefIn(e.target.value.toUpperCase())} placeholder={tr('Friend’s code', 'رمز صديقك')} className="!bg-white !text-gray-900 font-mono" dir="ltr" />
+              <Button type="submit" variant="accent">{tr('Apply', 'تطبيق')}</Button>
+            </form>
+          )}
+        </div>
+      )}
+
+      {(cfg.modules.loyaltyPoints || cfg.modules.loyaltyStamps) && (
+        <div className="mt-4 rounded-app bg-white border border-gray-100 p-4">
+          <div className="flex items-center gap-2 font-semibold"><Cake size={18} /> {tr('Your birthday', 'عيد ميلادك')}</div>
+          <p className="text-xs text-gray-500 mt-0.5">{tr(`Get “${tl(cfg.loyalty.birthdayReward)}” on your day.`, `احصل على "${tl(cfg.loyalty.birthdayReward)}" في يومك.`)}</p>
+          <div className="flex gap-2 mt-2">
+            <Input type="date" value={bday ? `2000-${bday}` : ''} onChange={(e) => setBday(e.target.value.slice(5))} />
+            <Button variant="dark" onClick={() => {
+              if (!bday) return;
+              let got = false;
+              update((d) => void (got = setBirthday(d, bday)));
+              toast(got ? tr('Happy birthday! 🎂 Your gift is in Rewards', 'عيد ميلاد سعيد! 🎂 هديتك في المكافآت') : tr('Saved', 'تم الحفظ'));
+            }}>{tr('Save', 'حفظ')}</Button>
+          </div>
+          <button className="mt-2 text-xs text-brand underline" onClick={() => {
+            const now = new Date();
+            const today = `${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            setBday(today);
+            let got = false;
+            update((d) => void (got = setBirthday(d, today)));
+            toast(got ? tr('Happy birthday! 🎂 Your gift is in Rewards', 'عيد ميلاد سعيد! 🎂 هديتك في المكافآت') : tr('Birthday gift already claimed this year', 'تم استلام هدية هذا العام'), got ? 'ok' : 'info');
+          }}>{tr('Demo: pretend today is my birthday', 'تجربة: اعتبر اليوم عيد ميلادي')}</button>
+        </div>
+      )}
 
       <div className="mt-4 rounded-app bg-white border border-gray-100 divide-y divide-gray-100">
         <Row icon={<Globe size={17} />} label={tr('Language', 'اللغة')} onClick={() => setLang(lang === 'en' ? 'ar' : 'en')} right={<span className="text-sm font-semibold text-brand">{lang === 'en' ? 'English' : 'العربية'}</span>} />

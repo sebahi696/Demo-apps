@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search, Plus, Check } from 'lucide-react';
+import { Search, Plus, Check, Heart, BellRing } from 'lucide-react';
 import { useDemo } from '../../lib/demo';
 import { toast } from '../../lib/store';
-import { addToCart, productAvailable } from '../../lib/ops';
+import { addToCart, productAvailable, toggleFavorite, toggleStockAlert } from '../../lib/ops';
+import { TAGS } from '../../lib/presets';
 import type { Product } from '../../lib/types';
 import { Button, Modal, Stepper, Thumb, Badge, cx, Input } from '../../components/ui';
 import { Screen } from './CustomerApp';
@@ -12,14 +13,18 @@ export default function Menu() {
   const { data, tr, tl, terms, m, lang } = useDemo();
   const [params, setParams] = useSearchParams();
   const [q, setQ] = useState('');
+  const [filter, setFilter] = useState<string | null>(params.get('fav') ? 'fav' : null);
+  const usedTags = useMemo(() => Object.keys(TAGS).filter((t) => data.products.some((p) => p.active && p.tags?.includes(t as never))), [data.products]);
   const [activeCat, setActiveCat] = useState(data.categories[0]?.id);
   const scroller = useRef<HTMLDivElement>(null);
   const open = data.products.find((p) => p.id === params.get('product'));
 
   const visible = useMemo(() => {
     const s = q.trim().toLowerCase();
-    return data.products.filter((p) => p.active && (!s || p.name.en.toLowerCase().includes(s) || (p.name.ar ?? '').includes(s) || p.desc.en.toLowerCase().includes(s)));
-  }, [data.products, q]);
+    return data.products.filter((p) => p.active && (!s || p.name.en.toLowerCase().includes(s) || (p.name.ar ?? '').includes(s) || p.desc.en.toLowerCase().includes(s))
+      && (!filter || (filter === 'fav' ? data.favorites.includes(p.id) : filter === 'sale' ? !!p.compareAt && p.compareAt > p.price : p.tags?.includes(filter as never))));
+  }, [data.products, q, filter, data.favorites]);
+  const hasSale = data.products.some((p) => p.active && p.compareAt && p.compareAt > p.price);
 
   useEffect(() => {
     const cat = params.get('cat');
@@ -45,7 +50,17 @@ export default function Menu() {
           <Search size={18} className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={tr('Search', 'ابحث')} className="ps-10 bg-white" />
         </div>
-        {!q && (
+        <div className="flex gap-1.5 overflow-x-auto no-scrollbar -mx-4 px-4">
+          {[
+            ...(data.favorites.length ? [{ k: 'fav', label: '❤️ ' + tr('Favorites', 'المفضلة') }] : []),
+            ...(hasSale ? [{ k: 'sale', label: '🏷️ ' + tr('On sale', 'تخفيضات') }] : []),
+            ...usedTags.map((t) => ({ k: t, label: `${TAGS[t].icon} ${tl(TAGS[t])}` })),
+          ].map((x) => (
+            <button key={x.k} onClick={() => setFilter(filter === x.k ? null : x.k)}
+              className={cx('shrink-0 rounded-full px-3 py-1 text-xs font-semibold border', filter === x.k ? 'bg-gray-900 text-white border-gray-900' : 'bg-white border-gray-200 text-gray-600')}>{x.label}</button>
+          ))}
+        </div>
+        {!q && !filter && (
           <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4">
             {data.categories.map((c) => (
               <button key={c.id} onClick={() => jump(c.id)}
@@ -79,7 +94,7 @@ export default function Menu() {
 }
 
 function ProductRow({ p, onOpen }: { p: Product; onOpen: () => void }) {
-  const { tl, m, tr } = useDemo();
+  const { tl, m, tr, data } = useDemo();
   const ok = productAvailable(p);
   return (
     <button onClick={onOpen} className={cx('w-full flex gap-3 rounded-app bg-white border border-gray-100 p-2.5 text-start shadow-sm', !ok && 'opacity-60')}>
@@ -88,10 +103,12 @@ function ProductRow({ p, onOpen }: { p: Product; onOpen: () => void }) {
         <div className="flex items-center gap-1.5">
           <span className="font-semibold leading-tight line-clamp-1">{tl(p.name)}</span>
           {p.isNew && <Badge className="bg-brand2 text-onbrand2">{tr('New', 'جديد')}</Badge>}
+          {data.favorites.includes(p.id) && <Heart size={13} className="fill-rose-500 text-rose-500 shrink-0" />}
         </div>
+        {p.tags?.length > 0 && <div className="text-[11px] mt-0.5">{p.tags.slice(0, 3).map((t) => TAGS[t]?.icon).join(' ')}</div>}
         <div className="text-xs text-gray-500 line-clamp-2 mt-0.5">{tl(p.desc)}</div>
         <div className="flex items-center justify-between mt-1.5">
-          <span className="font-bold text-sm">{m(p.price)}</span>
+          <span className="font-bold text-sm">{m(p.price)}{p.compareAt && p.compareAt > p.price && <span className="ms-1.5 text-xs text-gray-400 line-through font-normal">{m(p.compareAt)}</span>}</span>
           {ok ? (
             <span className="h-8 w-8 rounded-full bg-brand text-onbrand grid place-items-center"><Plus size={18} /></span>
           ) : (
@@ -104,7 +121,9 @@ function ProductRow({ p, onOpen }: { p: Product; onOpen: () => void }) {
 }
 
 export function ProductSheet({ p, onClose }: { p: Product; onClose: () => void }) {
-  const { tl, tr, m, update } = useDemo();
+  const { tl, tr, m, update, data } = useDemo();
+  const fav = data.favorites.includes(p.id);
+  const alert = data.stockAlerts.includes(p.id);
   const [qty, setQty] = useState(1);
   const [sel, setSel] = useState<Record<string, string[]>>(() =>
     Object.fromEntries(p.groups.map((g) => [g.id, g.required && !g.multi ? [g.options[0].id] : []])),
@@ -124,21 +143,38 @@ export function ProductSheet({ p, onClose }: { p: Product; onClose: () => void }
 
   return (
     <Modal open onClose={onClose} contained footer={
-      <Button block size="lg" onClick={add} disabled={!ok} className="justify-between">
-        <span>{ok ? tr('Add to cart', 'أضف إلى السلة') : tr('Sold out', 'نفدت الكمية')}</span>
-        <span className="tabular-nums">{m(unit * qty)}</span>
-      </Button>
+      ok ? (
+        <Button block size="lg" onClick={add} className="justify-between">
+          <span>{tr('Add to cart', 'أضف إلى السلة')}</span>
+          <span className="tabular-nums">{m(unit * qty)}</span>
+        </Button>
+      ) : (
+        <Button block size="lg" variant={alert ? 'outline' : 'dark'} icon={<BellRing size={18} />} onClick={() => {
+          update((d) => toggleStockAlert(d, p.id));
+          toast(alert ? tr('Alert removed', 'تم إلغاء التنبيه') : tr('We’ll notify you when it’s back', 'سنُعلمك عند توفره'), 'info');
+        }}>{alert ? tr('You’ll be notified ✓', 'سيتم إعلامك ✓') : tr('Notify me when available', 'أعلمني عند التوفر')}</Button>
+      )
     }>
-      <div className="-mx-5 -mt-4">
+      <div className="-mx-5 -mt-4 relative">
         <Thumb emoji={p.emoji} image={p.image} bg={p.bg} size="xl" className="!rounded-none !h-52" />
+        <button onClick={() => update((d) => toggleFavorite(d, p.id))} className="absolute top-3 end-3 h-10 w-10 rounded-full bg-white/90 shadow grid place-items-center" aria-label="Favorite">
+          <Heart size={20} className={fav ? 'fill-rose-500 text-rose-500' : 'text-gray-600'} />
+        </button>
+        {p.compareAt && p.compareAt > p.price && <span className="absolute top-3 start-3 rounded-full bg-rose-600 text-white text-xs font-bold px-2 py-1">-{Math.round((1 - p.price / p.compareAt) * 100)}%</span>}
       </div>
       <div className="mt-4 flex items-start gap-3">
         <div className="flex-1">
           <h2 className="font-display font-bold text-2xl leading-tight">{tl(p.name)}</h2>
           <p className="text-gray-500 mt-1">{tl(p.desc)}</p>
         </div>
-        <div className="font-bold text-lg">{m(p.price)}</div>
+        <div className="text-end">
+          <div className="font-bold text-lg">{m(p.price)}</div>
+          {p.compareAt && p.compareAt > p.price && <div className="text-sm text-gray-400 line-through">{m(p.compareAt)}</div>}
+        </div>
       </div>
+      {p.tags?.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mt-2">{p.tags.map((t) => TAGS[t] && <Badge key={t}>{TAGS[t].icon} {tl(TAGS[t])}</Badge>)}</div>
+      )}
       {p.stock !== null && p.stock > 0 && p.stock <= 5 && <div className="mt-2 text-sm font-semibold text-amber-600">{tr(`Only ${p.stock} left`, `بقي ${p.stock} فقط`)}</div>}
       {p.groups.map((g) => (
         <div key={g.id} className="mt-5">

@@ -13,6 +13,7 @@ import { MiniPreview } from '../../components/MiniPreview';
 import { PlanSummary, MODULE_LABELS, PAY_LABEL } from '../../components/PlanSummary';
 import { PageHead } from './OwnerApp';
 import { Bookings } from '../staff/StaffApp';
+import { HoursCard, BranchesCard, TableQrCard } from './Extras';
 
 const BANNER_BGS = ['#111827', '#7c2d12', '#92400e', '#3f6212', '#0e7490', '#4338ca', '#be185d', '#57534e', '#4a2c20', '#18181b'];
 
@@ -113,7 +114,7 @@ export function Settings() {
   const { cfg, tr, tl, update, terms } = useDemo();
   const set = (fn: (d: Demo) => void) => update((d) => { fn(d); track(d, 'editSettings'); });
   const f = cfg.fulfillment;
-  const modules: ModuleKey[] = ['ordering', 'delivery', 'pickup', ...(cfg.industry !== 'retail' ? ['dineIn' as const] : []), 'loyaltyPoints', 'loyaltyStamps', 'vipTiers', 'staticQr', 'deals', 'campaigns', 'reservations'];
+  const modules: ModuleKey[] = ['ordering', 'delivery', 'pickup', ...(cfg.industry !== 'retail' ? ['dineIn' as const, 'tableQr' as const] : []), 'tips', 'wallet', 'loyaltyPoints', 'loyaltyStamps', 'vipTiers', 'staticQr', 'referrals', 'deals', 'campaigns', 'reviews', 'reservations'];
   return (
     <>
       <PageHead title={tr('Settings', 'الإعدادات')} />
@@ -125,6 +126,7 @@ export function Settings() {
         </Card>
 
         <div className="space-y-4">
+          <HoursCard />
           <Card className="p-5 space-y-3">
             <div className="font-bold">{tr('Business', 'العمل')}</div>
             <div className="grid grid-cols-2 gap-3">
@@ -138,15 +140,13 @@ export function Settings() {
               <Field label={tr('Currency', 'العملة')}>
                 <Select value={cfg.business.currency} onChange={(e) => set((d) => void (d.config.business.currency = e.target.value))}>{CURRENCIES.map((c) => <option key={c}>{c}</option>)}</Select>
               </Field>
-              <Field label={tr('Opens', 'يفتح')}><Input type="time" value={cfg.business.openTime} onChange={(e) => set((d) => void (d.config.business.openTime = e.target.value))} /></Field>
-              <Field label={tr('Closes', 'يغلق')}><Input type="time" value={cfg.business.closeTime} onChange={(e) => set((d) => void (d.config.business.closeTime = e.target.value))} /></Field>
             </div>
           </Card>
 
           <Card className="p-5 space-y-3">
             <div className="font-bold">{tr('Payments', 'الدفع')}</div>
             <p className="text-sm text-gray-500 -mt-1">{tr('In the real app, payments go straight to your own account (Stripe or a local gateway).', 'في التطبيق الحقيقي، تذهب المدفوعات مباشرة إلى حسابك (Stripe أو بوابة محلية).')}</p>
-            {(Object.keys(cfg.payments) as PaymentKey[]).map((k) => <Toggle key={k} checked={cfg.payments[k]} onChange={(v) => set((d) => void (d.config.payments[k] = v))} label={tl(PAY_LABEL[k])} />)}
+            {(Object.keys(cfg.payments) as PaymentKey[]).filter((k) => k !== 'wallet' || cfg.modules.wallet).map((k) => <Toggle key={k} checked={cfg.payments[k]} onChange={(v) => set((d) => void (d.config.payments[k] = v))} label={tl(PAY_LABEL[k])} />)}
           </Card>
         </div>
 
@@ -178,6 +178,18 @@ export function Settings() {
           </Card>
         )}
 
+        <BranchesCard />
+        {cfg.modules.dineIn && cfg.modules.tableQr && <TableQrCard />}
+        {cfg.modules.tips && (
+          <Card className="p-5 space-y-3">
+            <div className="font-bold">{tr('Tip options (%)', 'خيارات الإكرامية (%)')}</div>
+            <Input defaultValue={cfg.tips.join(', ')} onBlur={(e) => {
+              const v = e.target.value.split(',').map((x) => parseInt(x)).filter((x) => x >= 0).slice(0, 5);
+              if (v.length) set((d) => void (d.config.tips = v));
+            }} />
+            <div className="text-xs text-gray-500">{tr('e.g. 0, 5, 10, 15 — 0 shows as “No tip”', 'مثلاً 0، 5، 10، 15 — يظهر 0 كـ "بدون"')}</div>
+          </Card>
+        )}
         <Card className="p-5 space-y-3">
           <div className="font-bold">{tr('App language', 'لغة التطبيق')}</div>
           <Select value={cfg.defaultLang} onChange={(e) => set((d) => void (d.config.defaultLang = e.target.value as 'en'))}>

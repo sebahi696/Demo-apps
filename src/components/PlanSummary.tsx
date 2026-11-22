@@ -18,6 +18,11 @@ export const MODULE_LABELS: Record<ModuleKey, { en: string; ar: string }> = {
   deals: { en: 'Deals & coupons', ar: 'العروض والقسائم' },
   campaigns: { en: 'Push campaigns', ar: 'حملات الإشعارات' },
   reservations: { en: 'Bookings', ar: 'الحجوزات' },
+  wallet: { en: 'Wallet & gift cards', ar: 'المحفظة وبطاقات الهدايا' },
+  tips: { en: 'Tips at checkout', ar: 'الإكرامية عند الدفع' },
+  reviews: { en: 'Ratings & reviews', ar: 'التقييمات والمراجعات' },
+  referrals: { en: 'Referrals & birthday rewards', ar: 'الإحالات وهدايا عيد الميلاد' },
+  tableQr: { en: 'Table QR ordering', ar: 'الطلب عبر QR الطاولة' },
 };
 
 const ACTIVITY: Record<string, { en: string; ar: string }> = {
@@ -32,6 +37,12 @@ const ACTIVITY: Record<string, { en: string; ar: string }> = {
   branding: { en: 'Edited branding', ar: 'تعديل الهوية' },
   addProduct: { en: 'Added own products', ar: 'إضافة منتجات خاصة' },
   editSettings: { en: 'Changed settings', ar: 'تعديل الإعدادات' },
+  wallet: { en: 'Topped up wallet', ar: 'شحن المحفظة' },
+  giftCard: { en: 'Bought gift cards', ar: 'شراء بطاقات هدايا' },
+  review: { en: 'Rated orders', ar: 'تقييم الطلبات' },
+  referral: { en: 'Used referrals', ar: 'استخدام الإحالات' },
+  favorite: { en: 'Saved favorites', ar: 'حفظ المفضلة' },
+  tableQr: { en: 'Ordered from a table QR', ar: 'الطلب من QR الطاولة' },
 };
 
 export const PAY_LABEL: Record<PaymentKey, { en: string; ar: string }> = {
@@ -39,6 +50,7 @@ export const PAY_LABEL: Record<PaymentKey, { en: string; ar: string }> = {
   applePay: { en: 'Apple Pay', ar: 'Apple Pay' },
   googlePay: { en: 'Google Pay', ar: 'Google Pay' },
   cash: { en: 'Cash', ar: 'نقداً' },
+  wallet: { en: 'App wallet', ar: 'محفظة التطبيق' },
 };
 
 /** The "requirements" one-pager: what they asked for + what they actually tried. */

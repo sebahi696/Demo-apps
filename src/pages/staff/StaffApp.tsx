@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { NavLink, Route, Routes } from 'react-router-dom';
-import { ClipboardList, QrCode, ScanLine, CalendarDays, Truck, Store, UtensilsCrossed, Banknote, Check, X, RefreshCw, Smartphone, Search } from 'lucide-react';
+import { ClipboardList, QrCode, ScanLine, CalendarDays, Truck, Store, UtensilsCrossed, Banknote, Check, X, RefreshCw, Smartphone, Search, Printer, PauseCircle } from 'lucide-react';
 import { useDemo } from '../../lib/demo';
 import { toast } from '../../lib/store';
 import { addLedger, claimToken, claimUrl, findVoucher, makeToken, nextStatus, parseScan, pointsFor, setOrderStatus, setReservationStatus, statusLabel, statusTone, useVoucher } from '../../lib/ops';
@@ -88,10 +88,24 @@ function Board() {
     }
   }, [cols.new, tr]);
 
+  const { cfg, update } = useDemo();
+  const paused = cfg.business.ordersPaused;
   const titles = { new: tr('New', 'جديدة'), progress: tr('In progress', 'قيد التنفيذ'), ready: tr('Ready / out', 'جاهزة / بالطريق'), done: tr('Done today', 'أُنجزت اليوم') };
   const keys = Object.keys(titles) as (keyof typeof titles)[];
   return (
     <>
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        <button onClick={() => update((d) => void (d.config.business.ordersPaused = !paused))}
+          className={cx('inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold border', paused ? 'bg-rose-600 text-white border-rose-600' : 'bg-white border-gray-200')}>
+          <PauseCircle size={15} /> {paused ? tr('Orders paused — tap to resume', 'الطلبات متوقفة — اضغط للاستئناف') : tr('Pause new orders', 'أوقف الطلبات الجديدة')}
+        </button>
+        {[0, 15, 30].map((v) => (
+          <button key={v} onClick={() => update((d) => void (d.config.business.busyExtraMinutes = v))}
+            className={cx('rounded-full px-3 py-1.5 text-sm font-semibold border', cfg.business.busyExtraMinutes === v ? 'bg-gray-900 text-white border-gray-900' : 'bg-white border-gray-200')}>
+            {v ? tr(`Busy +${v}m`, `ضغط +${v}د`) : tr('Normal', 'عادي')}
+          </button>
+        ))}
+      </div>
       <Segmented className="lg:hidden mb-3" value={tab} onChange={setTab} options={keys.map((k) => ({ value: k, label: <span>{titles[k]} <span className="opacity-60">{cols[k].length}</span></span> }))} />
       <div className="grid lg:grid-cols-4 gap-4">
         {keys.map((k) => (
@@ -109,6 +123,14 @@ function Board() {
       </div>
     </>
   );
+}
+
+function printTicket(o: Order, cfg: { business: { name: { en: string; ar?: string } } }, tl: (x: { en: string; ar?: string } | undefined) => string, m: (n: number) => string) {
+  const w = window.open('', '_blank', 'width=380,height=640');
+  if (!w) return;
+  const rows = o.items.map((i) => `<tr><td>${i.qty}×</td><td>${tl(i.name)}${i.options.length ? `<br><small>${i.options.map((x) => tl(x)).join(', ')}</small>` : ''}</td><td style="text-align:right">${m(i.unitPrice * i.qty)}</td></tr>`).join('');
+  w.document.write(`<!doctype html><html><head><title>#${o.number}</title><style>body{font-family:ui-monospace,monospace;width:280px;margin:8px auto;font-size:13px}h1{font-size:18px;text-align:center;margin:4px 0}table{width:100%;border-collapse:collapse}td{padding:3px 0;vertical-align:top}hr{border:0;border-top:1px dashed #000}.c{text-align:center}</style></head><body><h1>${tl(cfg.business.name)}</h1><div class="c">#${o.number} · ${new Date(o.createdAt).toLocaleString()}</div><div class="c"><b>${o.fulfillment.toUpperCase()}${o.table ? ' · TABLE ' + o.table : ''}</b></div><div class="c">${o.customerName}</div><hr><table>${rows}</table><hr><table><tr><td>Subtotal</td><td style="text-align:right">${m(o.subtotal)}</td></tr>${o.discount ? `<tr><td>Discount</td><td style="text-align:right">-${m(o.discount)}</td></tr>` : ''}${o.deliveryFee ? `<tr><td>Delivery</td><td style="text-align:right">${m(o.deliveryFee)}</td></tr>` : ''}${o.tip ? `<tr><td>Tip</td><td style="text-align:right">${m(o.tip)}</td></tr>` : ''}<tr><td><b>TOTAL</b></td><td style="text-align:right"><b>${m(o.total)}</b></td></tr></table><hr><div class="c">${o.paid ? 'PAID' : 'TO COLLECT'} · ${o.payment}</div>${o.note ? `<p>Note: ${o.note}</p>` : ''}<script>setTimeout(()=>print(),300)</script></body></html>`);
+  w.document.close();
 }
 
 export function OrderTicket({ o, compact }: { o: Order; compact?: boolean }) {
@@ -133,6 +155,7 @@ export function OrderTicket({ o, compact }: { o: Order; compact?: boolean }) {
       </div>
       <div className="flex items-center gap-1.5 text-xs text-gray-600 mt-1.5">
         {fIcon}<span>{fText}</span><span>·</span><span className="font-medium">{o.customerName}{isMe && ' ⭐'}</span>
+        {cfg.branches.length > 1 && <span className="ms-auto text-gray-400">{tl(cfg.branches.find((b) => b.id === o.branchId)?.name)}</span>}
       </div>
       {!compact && (
         <ul className="mt-2.5 space-y-1 text-sm">
@@ -147,7 +170,8 @@ export function OrderTicket({ o, compact }: { o: Order; compact?: boolean }) {
       {o.note && <div className="mt-2 text-xs bg-amber-50 text-amber-900 rounded-lg px-2 py-1.5">📝 {o.note}</div>}
       {o.address && !compact && <div className="mt-1.5 text-xs text-gray-500">📍 {o.address}</div>}
       <div className="flex items-center justify-between mt-3">
-        <span className="font-bold tabular-nums">{m(o.total)}</span>
+        <span className="font-bold tabular-nums">{m(o.total)}{o.tip > 0 && <span className="ms-1.5 text-xs font-normal text-emerald-700">{tr(`incl. ${m(o.tip)} tip`, `منها ${m(o.tip)} إكرامية`)}</span>}</span>
+        <button onClick={() => printTicket(o, cfg, tl, m)} className="ms-auto me-2 h-8 w-8 grid place-items-center rounded-full hover:bg-gray-100 text-gray-500" title="Print"><Printer size={15} /></button>
         {o.paid ? <Badge className="bg-emerald-100 text-emerald-800">{tr('Paid', 'مدفوع')}</Badge> : <Badge className="bg-amber-100 text-amber-800"><Banknote size={12} /> {tr('Collect', 'تحصيل')}</Badge>}
       </div>
       {nx && o.status !== 'cancelled' && (

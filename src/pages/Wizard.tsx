@@ -242,17 +242,24 @@ export default function Wizard() {
                 ['ordering', tr('Online ordering & cart', 'الطلب أونلاين وسلة التسوق'), tr('Customers browse and order from the app', 'الزبائن يتصفحون ويطلبون من التطبيق')],
                 ['delivery', tl(pr.terms.delivery), tr('Zones, fees, minimum order, tracking', 'مناطق، رسوم، حد أدنى، تتبع الطلب')],
                 ['pickup', tr('Pickup / click & collect', 'الاستلام من المتجر'), tr('Order ahead, skip the line', 'اطلب مسبقاً وتجاوز الطابور')],
-                ...(a.industry !== 'retail' ? [['dineIn', tr('Dine-in / table ordering', 'الطلب من الطاولة'), tr('Order from the table', 'الطلب مباشرة من الطاولة')] as [ModuleKey, string, string]] : []),
+                ...(a.industry !== 'retail' ? [
+                  ['dineIn', tr('Dine-in ordering', 'الطلب داخل المطعم'), tr('Guests order from their table', 'يطلب الضيوف من طاولتهم')] as [ModuleKey, string, string],
+                  ['tableQr', tr('Table QR codes', 'رموز QR للطاولات'), tr('Print a QR per table: scan, order, pay', 'رمز QR لكل طاولة: امسح، اطلب، ادفع')] as [ModuleKey, string, string],
+                  ['tips', tr('Tips at checkout', 'الإكرامية عند الدفع'), tr('Customers can tip the team or driver', 'يمكن للزبائن منح إكرامية للفريق أو السائق')] as [ModuleKey, string, string],
+                ] : []),
               ]} a={a} setA={setA} />
               <FeatureGroup title={tr('Loyalty & rewards', 'الولاء والمكافآت')} items={[
                 ['loyaltyPoints', tr('Points program', 'برنامج النقاط'), tr('Earn points on every purchase, redeem rewards', 'اجمع النقاط مع كل عملية شراء واستبدلها بمكافآت')],
                 ['loyaltyStamps', tr('Digital stamp card', 'بطاقة أختام رقمية'), tr('e.g. buy 7, get the 8th free', 'مثلاً: اشترِ 7 واحصل على الثامنة مجاناً')],
                 ['vipTiers', tr('VIP tiers', 'مستويات VIP'), tr('Silver, Gold, Platinum with bonus points', 'فضي، ذهبي، بلاتيني مع نقاط إضافية')],
                 ['staticQr', tr('Counter QR code', 'رمز QR على الكاشير'), tr('Printable QR customers scan in store', 'رمز QR مطبوع يمسحه الزبائن في المتجر')],
+                ['wallet', tr('Wallet & gift cards', 'المحفظة وبطاقات الهدايا'), tr('Pre-paid balance with top-up bonus, send gift cards', 'رصيد مسبق الدفع مع مكافأة شحن، وإرسال بطاقات هدايا')],
+                ['referrals', tr('Referrals & birthdays', 'الإحالات وأعياد الميلاد'), tr('Invite-a-friend codes and birthday gifts', 'رموز دعوة الأصدقاء وهدايا أعياد الميلاد')],
               ]} a={a} setA={setA} />
               <FeatureGroup title={tr('Marketing', 'التسويق')} items={[
                 ['deals', tr('Deals & coupons', 'العروض والقسائم'), tr('Discount codes and flash deals', 'رموز خصم وعروض سريعة')],
                 ['campaigns', tr('Push notification campaigns', 'حملات الإشعارات'), tr('Message all your customers in one tap', 'راسل جميع زبائنك بضغطة واحدة')],
+                ['reviews', tr('Ratings & reviews', 'التقييمات والمراجعات'), tr('Customers rate orders, you reply', 'يقيّم الزبائن الطلبات وتردّ عليهم')],
               ]} a={a} setA={setA} />
               <FeatureGroup title={tr('Bookings', 'الحجوزات')} items={[
                 ['reservations', tl(pr.terms.reserve), tr('Time slots, capacity and confirmations', 'مواعيد، سعة وتأكيدات')],

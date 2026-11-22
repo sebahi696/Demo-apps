@@ -217,6 +217,7 @@ export interface Totals {
   discount: number;
   deliveryFee: number;
   tax: number;
+  tip: number;
   total: number;
   couponError?: L;
   minOrderError?: L;
@@ -224,7 +225,7 @@ export interface Totals {
   couponLabel?: L;
 }
 
-export function totals(d: Demo, fulfillment: Fulfillment, zoneId?: string): Totals {
+export function totals(d: Demo, fulfillment: Fulfillment, zoneId?: string, tipPct = 0): Totals {
   const f = d.config.fulfillment;
   let subtotal = 0;
   for (const i of d.data.cart.items) {
@@ -265,20 +266,25 @@ export function totals(d: Demo, fulfillment: Fulfillment, zoneId?: string): Tota
   discount = round2(Math.min(discount, subtotal));
   const taxable = subtotal - discount;
   const tax = f.taxRate ? round2(f.taxIncluded ? (taxable * f.taxRate) / (100 + f.taxRate) : (taxable * f.taxRate) / 100) : 0;
-  const total = round2(taxable + deliveryFee + (f.taxIncluded ? 0 : tax));
+  const tip = d.config.modules.tips ? round2((taxable * tipPct) / 100) : 0;
+  const total = round2(taxable + deliveryFee + (f.taxIncluded ? 0 : tax) + tip);
   const minOrderError =
     fulfillment === 'delivery' && f.minOrder > 0 && subtotal < f.minOrder
       ? { en: `Minimum for delivery is ${f.minOrder}`, ar: `الحد الأدنى للتوصيل ${f.minOrder}` }
       : undefined;
-  return { subtotal, discount, deliveryFee, tax, total, couponError, couponLabel, voucher, minOrderError };
+  return { subtotal, discount, deliveryFee, tax, tip, total, couponError, couponLabel, voucher, minOrderError };
 }
 
 export function placeOrder(
   d: Demo,
-  input: { fulfillment: Fulfillment; zoneId?: string; address?: string; table?: string; payment: PaymentKey; note?: string },
+  input: { fulfillment: Fulfillment; zoneId?: string; address?: string; table?: string; payment: PaymentKey; note?: string; tipPct?: number },
 ): Order {
-  const t = totals(d, input.fulfillment, input.zoneId);
+  const t = totals(d, input.fulfillment, input.zoneId, input.tipPct ?? 0);
   const c = me(d);
+  if (input.payment === 'wallet') {
+    c.wallet = round2(c.wallet - t.total);
+    d.data.walletTx.unshift({ id: uid('w'), customerId: c.id, amount: -t.total, kind: 'payment', note: `Order #${d.data.nextOrderNumber}`, at: Date.now() });
+  }
   const items = d.data.cart.items.map((i) => {
     const l = lineFor(d, i.productId, i.optionIds)!;
     return { productId: i.productId, name: l.product.name, emoji: l.product.emoji, qty: i.qty, unitPrice: l.unit, options: l.options };
@@ -299,10 +305,10 @@ export function placeOrder(
     fulfillment: input.fulfillment, zoneId: input.zoneId, address: input.address, table: input.table,
     payment: input.payment, paid: input.payment !== 'cash', status: 'pending', history: [{ status: 'pending', at: now }],
     createdAt: now, updatedAt: now, couponCode: t.couponLabel ? d.data.cart.couponCode : undefined, voucherId: t.voucher?.id,
-    note: input.note, pointsEarned: 0, stampsEarned: 0,
+    note: input.note, pointsEarned: 0, stampsEarned: 0, tip: t.tip, branchId: d.data.branchId ?? d.config.branches[0]?.id,
   };
   d.data.orders.unshift(o);
-  d.data.cart = { items: [] };
+  d.data.cart = { items: [], table: d.data.cart.table };
   notify(d, { en: `Order #${o.number} received`, ar: `تم استلام الطلب #${o.number}` },
     { en: 'We’ll let you know as soon as the store accepts it.', ar: 'سنُعلمك فور قبول المتجر للطلب.' }, 'order', `orders/${o.id}`);
   tourDone(d, 'placeOrder');
@@ -351,6 +357,13 @@ export function setOrderStatus(d: Demo, orderId: string, status: OrderStatus) {
   o.updatedAt = Date.now();
   o.history.push({ status, at: Date.now() });
   if (status === 'accepted') tourDone(d, 'staffAccept');
+  if (status === 'cancelled' && o.payment === 'wallet') {
+    const c = d.data.customers.find((x) => x.id === o.customerId);
+    if (c) {
+      c.wallet = round2(c.wallet + o.total);
+      d.data.walletTx.unshift({ id: uid('w'), customerId: c.id, amount: o.total, kind: 'refund', note: `Order #${o.number}`, at: Date.now() });
+    }
+  }
   if (status === 'completed') {
     o.paid = true;
     const c = d.data.customers.find((x) => x.id === o.customerId);
@@ -395,10 +408,10 @@ export function slotsFor(d: Demo, date: string) {
   return out;
 }
 
-export function createReservation(d: Demo, r: Omit<Reservation, 'id' | 'status' | 'createdAt' | 'customerId'>) {
+export function createReservation(d: Demo, r: Omit<Reservation, 'id' | 'status' | 'createdAt' | 'customerId' | 'branchId'>) {
   const slot = slotsFor(d, r.date).find((s) => s.time === r.time);
   if (!slot || slot.left <= 0) return { ok: false as const, error: { en: 'That time was just taken — pick another', ar: 'تم حجز هذا الوقت للتو — اختر وقتاً آخر' } };
-  const res: Reservation = { ...r, id: uid('r'), customerId: d.data.meId, status: 'pending', createdAt: Date.now() };
+  const res: Reservation = { ...r, id: uid('r'), customerId: d.data.meId, status: 'pending', createdAt: Date.now(), branchId: d.data.branchId ?? d.config.branches[0]?.id };
   d.data.reservations.unshift(res);
   notify(d, { en: 'Booking request sent', ar: 'تم إرسال طلب الحجز' },
     { en: `${r.date} at ${r.time} for ${r.party}`, ar: `${r.date} الساعة ${r.time} لـ ${r.party}` }, 'reservation', 'reserve');
@@ -434,3 +447,120 @@ export function sendCampaign(d: Demo, title: L, body: L, audience: 'all' | 'vip'
 }
 
 export const productAvailable = (p: Product) => p.active && (p.stock === null || p.stock > 0);
+
+// ── Store status (hours, closed days, paused) ──────────────────
+export function storeStatus(d: Demo, at = new Date()) {
+  const b = d.config.business;
+  const mins = (t: string) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+  const open = mins(b.openTime);
+  let close = mins(b.closeTime);
+  if (close <= open) close += 24 * 60;
+  let now = at.getHours() * 60 + at.getMinutes();
+  if (now < open && now + 24 * 60 < close) now += 24 * 60; // after midnight, still open from yesterday
+  const dayClosed = b.closedDays.includes(at.getDay());
+  const inHours = !dayClosed && now >= open && now < close;
+  return { open: inHours && !b.ordersPaused, paused: b.ordersPaused, dayClosed, inHours, opensAt: b.openTime, closesAt: b.closeTime, extra: b.busyExtraMinutes };
+}
+
+// ── Favorites & stock alerts ───────────────────────────────────
+export function toggleFavorite(d: Demo, productId: string) {
+  const f = d.data.favorites;
+  const i = f.indexOf(productId);
+  if (i >= 0) f.splice(i, 1);
+  else { f.push(productId); track(d, 'favorite'); }
+}
+export function toggleStockAlert(d: Demo, productId: string) {
+  const f = d.data.stockAlerts;
+  const i = f.indexOf(productId);
+  if (i >= 0) f.splice(i, 1);
+  else f.push(productId);
+}
+export function restocked(d: Demo, productId: string) {
+  if (!d.data.stockAlerts.includes(productId)) return;
+  const p = d.data.products.find((x) => x.id === productId);
+  if (!p) return;
+  d.data.stockAlerts = d.data.stockAlerts.filter((x) => x !== productId);
+  notify(d, { en: 'Back in stock! 🎉', ar: 'عاد إلى المخزون! 🎉' }, { en: `${p.name.en} is available again.`, ar: `${p.name.ar || p.name.en} متوفر من جديد.` }, 'system', `menu?product=${p.id}`);
+}
+
+// ── Wallet & gift cards ────────────────────────────────────────
+export function topUp(d: Demo, amount: number) {
+  const c = me(d);
+  const bonus = round2((amount * d.config.wallet.bonusPercent) / 100);
+  c.wallet = round2(c.wallet + amount + bonus);
+  d.data.walletTx.unshift({ id: uid('w'), customerId: c.id, amount, kind: 'topup', at: Date.now() });
+  if (bonus) d.data.walletTx.unshift({ id: uid('w'), customerId: c.id, amount: bonus, kind: 'bonus', note: `${d.config.wallet.bonusPercent}%`, at: Date.now() });
+  tourDone(d, 'wallet');
+  return bonus;
+}
+export function buyGiftCard(d: Demo, amount: number, toName: string, message: string) {
+  const g = { code: 'GIFT-' + code(6), amount, fromName: me(d).name, toName, message, createdAt: Date.now() };
+  d.data.giftCards.unshift(g);
+  track(d, 'giftCard');
+  return g;
+}
+export function redeemGiftCard(d: Demo, raw: string): { ok: boolean; amount?: number; error?: L } {
+  const g = d.data.giftCards.find((x) => x.code === raw.trim().toUpperCase());
+  if (!g) return { ok: false, error: { en: 'Gift card not found', ar: 'بطاقة الهدية غير موجودة' } };
+  if (g.redeemedBy) return { ok: false, error: { en: 'Already redeemed', ar: 'تم استخدامها مسبقاً' } };
+  const c = me(d);
+  g.redeemedBy = c.id;
+  g.redeemedAt = Date.now();
+  c.wallet = round2(c.wallet + g.amount);
+  d.data.walletTx.unshift({ id: uid('w'), customerId: c.id, amount: g.amount, kind: 'gift', note: g.code, at: Date.now() });
+  return { ok: true, amount: g.amount };
+}
+
+// ── Reviews ────────────────────────────────────────────────────
+export function rateOrder(d: Demo, orderId: string, rating: number, review?: string) {
+  const o = d.data.orders.find((x) => x.id === orderId);
+  if (!o || o.rating) return 0;
+  o.rating = rating;
+  o.review = review?.trim() || undefined;
+  tourDone(d, 'review');
+  const bonus = d.config.modules.loyaltyPoints ? 20 : 0;
+  if (bonus) addLedger(d, o.customerId, bonus, 0, 'review', 'Thanks for your review');
+  return bonus;
+}
+
+// ── Referrals & birthday ───────────────────────────────────────
+export function applyReferral(d: Demo, raw: string): { ok: boolean; error?: L } {
+  const c = me(d);
+  const codeIn = raw.trim().toUpperCase();
+  if (c.referredBy) return { ok: false, error: { en: 'You already used a referral code', ar: 'لقد استخدمت رمز إحالة مسبقاً' } };
+  const friend = d.data.customers.find((x) => x.referralCode === codeIn && x.id !== c.id);
+  if (!friend) return { ok: false, error: { en: 'Code not found', ar: 'الرمز غير موجود' } };
+  c.referredBy = friend.id;
+  const b = d.config.loyalty.referralBonus;
+  addLedger(d, c.id, b, 0, 'referral', `Referred by ${friend.name}`);
+  addLedger(d, friend.id, b, 0, 'referral', `Invited ${c.name}`);
+  track(d, 'referral');
+  return { ok: true };
+}
+/** Demo helper: a friend signs up with your code. */
+export function simulateFriendJoin(d: Demo) {
+  const c = me(d);
+  const names = ['Yara Haddad', 'Karim Aoun', 'Lea Nasr', 'Fouad Khalil', 'Rana Saab'];
+  const name = names[Math.floor(Math.random() * names.length)];
+  const f: Customer = { id: uid('c'), name, phone: '+961 71 ' + Math.floor(100000 + Math.random() * 899999), points: 0, lifetimePoints: 0, stamps: 0, joinedAt: Date.now(), lastSeenAt: Date.now(), wallet: 0, referralCode: name.split(' ')[0].toUpperCase() + code(3), referredBy: c.id };
+  d.data.customers.push(f);
+  const b = d.config.loyalty.referralBonus;
+  addLedger(d, f.id, b, 0, 'referral', `Referred by ${c.name}`);
+  addLedger(d, c.id, b, 0, 'referral', `Invited ${name}`);
+  notify(d, { en: `${name} joined with your code! 🎉`, ar: `انضم ${name} باستخدام رمزك! 🎉` }, { en: `You both earned ${b} points.`, ar: `حصل كل منكما على ${b} نقطة.` }, 'loyalty', 'rewards');
+  track(d, 'referral');
+  return name;
+}
+export function setBirthday(d: Demo, mmdd: string) {
+  const c = me(d);
+  c.birthday = mmdd;
+  const now = new Date();
+  const today = `${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const year = String(now.getFullYear());
+  if (mmdd === today && !d.data.vouchers.some((v) => v.customerId === c.id && v.rewardId === 'birthday-' + year)) {
+    d.data.vouchers.unshift({ id: uid('v'), code: 'RW-' + code(5), customerId: c.id, rewardId: 'birthday-' + year, name: d.config.loyalty.birthdayReward, emoji: '🎂', kind: 'birthday', value: 0, status: 'active', createdAt: Date.now() });
+    notify(d, { en: 'Happy birthday! 🎂', ar: 'عيد ميلاد سعيد! 🎂' }, d.config.loyalty.birthdayReward, 'loyalty', 'rewards');
+    return true;
+  }
+  return false;
+}

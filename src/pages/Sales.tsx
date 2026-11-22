@@ -5,7 +5,7 @@ import { useStore, toast } from '../lib/store';
 import { useI18n } from '../lib/i18n';
 import { PRESETS } from '../lib/presets';
 import { shareLink } from '../lib/share';
-import { buildData } from '../lib/seed';
+import { buildData, migrateConfig } from '../lib/seed';
 import { cloudOn, checkPasscode, deleteLead, extendLead, listLeads, type CloudLead } from '../lib/cloud';
 import { DAY, downloadCsv, fmtDate, timeAgo, uid } from '../lib/utils';
 import { Button, Card, Input, Modal, Badge, cx } from '../components/ui';
@@ -114,7 +114,7 @@ export default function Sales() {
   const open = (r: Row) => {
     if (r.local) return nav(`/d/${r.id}/owner`);
     // A private preview copy for the salesperson — never reported back, so it can't overwrite the client's lead.
-    const config = { ...structuredClone(r.demo.config), id: uid('d'), noSync: true, createdAt: Date.now(), expiresAt: Date.now() + 30 * DAY };
+    const config = { ...migrateConfig(structuredClone(r.demo.config)), id: uid('d'), noSync: true, createdAt: Date.now(), expiresAt: Date.now() + 30 * DAY };
     const copy: Demo = { config, data: buildData(config) };
     copy.data.activity = { ...r.demo.data.activity };
     addDemo(copy);

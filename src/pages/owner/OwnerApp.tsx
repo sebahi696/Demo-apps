@@ -2,7 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { NavLink, Route, Routes, Link } from 'react-router-dom';
 import {
   LayoutDashboard, Receipt, Package, Users, Gift, Tag, Megaphone, CalendarDays, Palette, Settings as SettingsIcon, UserCog, FileText,
-  TrendingUp, ShoppingCart, Wallet, Star, Download, Search, Plus, Minus,
+  TrendingUp, ShoppingCart, Wallet, Star, Download, Search, Plus, Minus, MessageSquareHeart, CreditCard,
 } from 'lucide-react';
 import { useDemo } from '../../lib/demo';
 import { toast } from '../../lib/store';
@@ -14,6 +14,7 @@ import { OrderTicket } from '../staff/StaffApp';
 import Catalog from './Catalog';
 import { Loyalty, Deals, Campaigns } from './Marketing';
 import { Branding, Settings, Staff, OwnerReservations, Plan } from './Settings';
+import { Reviews, WalletAdmin } from './Extras';
 
 export default function OwnerApp() {
   const { cfg, tr, tl, terms } = useDemo();
@@ -26,6 +27,8 @@ export default function OwnerApp() {
     { to: 'loyalty', icon: <Gift size={18} />, label: tr('Loyalty', 'الولاء'), show: mod.loyaltyPoints || mod.loyaltyStamps },
     { to: 'deals', icon: <Tag size={18} />, label: tr('Deals', 'العروض'), show: mod.deals },
     { to: 'campaigns', icon: <Megaphone size={18} />, label: tr('Notifications', 'الإشعارات'), show: mod.campaigns },
+    { to: 'reviews', icon: <MessageSquareHeart size={18} />, label: tr('Reviews', 'التقييمات'), show: mod.reviews },
+    { to: 'wallet', icon: <CreditCard size={18} />, label: tr('Wallet & gifts', 'المحفظة والهدايا'), show: mod.wallet },
     { to: 'reservations', icon: <CalendarDays size={18} />, label: tr('Bookings', 'الحجوزات'), show: mod.reservations },
     { to: 'branding', icon: <Palette size={18} />, label: tr('Branding', 'الهوية') },
     { to: 'staff', icon: <UserCog size={18} />, label: tr('Staff', 'الموظفون') },
@@ -65,6 +68,8 @@ export default function OwnerApp() {
             <Route path="deals" element={<Deals />} />
             <Route path="campaigns" element={<Campaigns />} />
             <Route path="reservations" element={<OwnerReservations />} />
+            <Route path="reviews" element={<Reviews />} />
+            <Route path="wallet" element={<WalletAdmin />} />
             <Route path="branding" element={<Branding />} />
             <Route path="staff" element={<Staff />} />
             <Route path="settings" element={<Settings />} />
@@ -104,6 +109,9 @@ function Dashboard() {
   const issued = data.ledger.filter((l) => l.at >= since && l.points > 0).reduce((s, l) => s + l.points, 0);
   const redeemed = data.ledger.filter((l) => l.at >= since && l.source === 'reward').length;
   const live = data.orders.filter((o) => !['completed', 'cancelled'].includes(o.status));
+  const rated = cur.filter((o) => o.rating);
+  const avgRating = rated.length ? rated.reduce((s, o) => s + o.rating!, 0) / rated.length : 0;
+  const tips = cur.reduce((s, o) => s + (o.tip || 0), 0);
   const h = new Date().getHours();
 
   const series = useMemo(() => {
@@ -152,6 +160,12 @@ function Dashboard() {
         <Stat icon={<Users size={16} />} label={tr('Loyalty members', 'أعضاء الولاء')} value={members} sub={tr(`${data.customers.length} customers total`, `${data.customers.length} زبوناً إجمالاً`)} />
         <Stat icon={<Star size={16} />} label={tr('Points issued', 'النقاط الممنوحة')} value={issued.toLocaleString()} sub={tr(`${redeemed} rewards redeemed`, `${redeemed} مكافآت مستبدلة`)} />
       </div>
+      {(cfg.modules.reviews || cfg.modules.tips) && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-3">
+          {cfg.modules.reviews && <Stat icon={<Star size={16} className="text-amber-500" />} label={tr('Average rating', 'متوسط التقييم')} value={avgRating ? `${avgRating.toFixed(1)} ★` : '—'} sub={tr(`${rated.length} ratings`, `${rated.length} تقييم`)} />}
+          {cfg.modules.tips && <Stat icon={<Wallet size={16} />} label={tr('Tips for the team', 'إكراميات الفريق')} value={m(Math.round(tips))} />}
+        </div>
+      )}
 
       <Card className="p-5 mt-4">
         <div className="flex items-center gap-2 font-bold"><TrendingUp size={18} /> {tr('Revenue', 'الإيرادات')}</div>
@@ -259,9 +273,10 @@ function OrdersTable({ orders, onOpen }: { orders: Order[]; onOpen?: (o: Order) 
 function Orders() {
   const { data, tr, tl, cfg } = useDemo();
   const [status, setStatus] = useState<'all' | OrderStatus>('all');
+  const [branch, setBranch] = useState('all');
   const [q, setQ] = useState('');
   const [open, setOpen] = useState<string | null>(null);
-  const list = data.orders.filter((o) => (status === 'all' || o.status === status) && (!q || String(o.number).includes(q) || o.customerName.toLowerCase().includes(q.toLowerCase())));
+  const list = data.orders.filter((o) => (status === 'all' || o.status === status) && (branch === 'all' || o.branchId === branch) && (!q || String(o.number).includes(q) || o.customerName.toLowerCase().includes(q.toLowerCase())));
   const statuses: ('all' | OrderStatus)[] = ['all', 'pending', 'accepted', 'preparing', 'ready', ...(cfg.modules.delivery ? ['outForDelivery' as const] : []), 'completed', 'cancelled'];
   const o = data.orders.find((x) => x.id === open);
   return (
@@ -277,6 +292,12 @@ function Orders() {
           <Search size={16} className="absolute start-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={tr('Search # or name', 'ابحث بالرقم أو الاسم')} className="ps-9 !h-10" />
         </div>
+        {cfg.branches.length > 1 && (
+          <select value={branch} onChange={(e) => setBranch(e.target.value)} className="h-10 rounded-app border border-gray-200 bg-white px-3 text-sm">
+            <option value="all">{tr('All branches', 'كل الفروع')}</option>
+            {cfg.branches.map((b) => <option key={b.id} value={b.id}>{tl(b.name)}</option>)}
+          </select>
+        )}
         <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
           {statuses.map((s) => (
             <button key={s} onClick={() => setStatus(s)} className={cx('rounded-full px-3 py-1.5 text-sm font-semibold whitespace-nowrap border', status === s ? 'bg-gray-900 text-white border-gray-900' : 'bg-white border-gray-200 text-gray-600')}>

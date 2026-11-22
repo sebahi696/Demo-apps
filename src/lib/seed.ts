@@ -1,7 +1,7 @@
 // Builds a complete, realistic demo (config + data) from questionnaire answers.
 import type { Customer, Demo, DemoConfig, DemoData, Fulfillment, Industry, Lang, Order, PaymentKey, Reservation } from './types';
-import { DEFAULT_TIERS, PRESETS, COUNTRIES } from './presets';
-import { DAY, round2, seeded, uid, ymd } from './utils';
+import { DEFAULT_TIERS, PRESETS, COUNTRIES, BRANCH_NAMES } from './presets';
+import { DAY, code, round2, seeded, uid, ymd } from './utils';
 import { PLATFORM } from '../platform.config';
 
 const NAMES = [
@@ -11,6 +11,15 @@ const NAMES = [
   'Sami Kanaan', 'Tala Yassine', 'Georges Frem', 'Mira Habib', 'Bilal Ghandour', 'Christelle Salem', 'Ahmad Diab',
   'Nadine Saliba', 'Walid Harb', 'Lara Chahine', 'Rabih Atallah', 'Zeina Sabbagh',
 ];
+
+const REVIEWS: [number, string][] = [
+  [5, 'Amazing as always!'], [5, 'Fast and super friendly staff.'], [5, 'Best in town, highly recommend.'], [4, 'Very good, a bit late today.'],
+  [4, 'Loved it. Packaging could be better.'], [5, 'Perfect 👌'], [3, 'Good but took longer than expected.'], [5, ''], [4, ''], [2, 'Order was missing an item.'],
+];
+const reviewFor = (r: (n: number) => number) => {
+  const [rating, review] = REVIEWS[r(REVIEWS.length)];
+  return { rating, review: review || undefined };
+};
 
 export interface WizardAnswers {
   industry: Industry;
@@ -29,10 +38,11 @@ export function defaultAnswers(industry: Industry): WizardAnswers {
     business: {
       name: { en: '', ar: '' }, tagline: { ...pr.sampleTagline }, logoEmoji: pr.logoEmoji, phone: '', email: '', address: '',
       city: '', country: 'Lebanon', currency: 'USD', openTime: pr.hours[0], closeTime: pr.hours[1],
+      closedDays: [], ordersPaused: false, busyExtraMinutes: 0,
     },
     brand: { primary: pr.palette.primary, secondary: pr.palette.secondary, radius: pr.radius, font: pr.font, headerStyle: 'solid' },
     modules: { ...pr.modules },
-    payments: { card: true, applePay: true, googlePay: true, cash: true },
+    payments: { card: true, applePay: true, googlePay: true, cash: true, wallet: pr.modules.wallet },
     defaultLang: 'en',
     lead: { ownerName: '', email: '', phone: '', answers: {} },
   };
@@ -52,7 +62,7 @@ export function buildConfig(a: WizardAnswers): DemoConfig {
     brand: a.brand,
     defaultLang: a.defaultLang,
     modules: a.modules,
-    payments: a.payments,
+    payments: { ...a.payments, wallet: a.modules.wallet },
     fulfillment: {
       zones: structuredClone(pr.zones), minOrder: a.industry === 'retail' ? 0 : 8,
       freeDeliveryOver: a.industry === 'retail' ? 60 : 25, prepMinutes: a.industry === 'cafe' ? 10 : a.industry === 'restaurant' ? 25 : 30,
@@ -60,13 +70,63 @@ export function buildConfig(a: WizardAnswers): DemoConfig {
     },
     loyalty: {
       pointsPerUnit: pr.pointsPerUnit, stampsTarget: pr.stampsTarget, stampReward: pr.stampReward, stampRule: pr.stampRule,
-      stampCategoryIds: [...pr.stampCategoryIds], signupBonus: 50,
+      stampCategoryIds: [...pr.stampCategoryIds], signupBonus: 50, referralBonus: 100, birthdayReward: BIRTHDAY[a.industry],
       staticQr: { dailyLimit: 2, cooldownMinutes: 60, requirePin: false, pin: '4321' },
       tiers: structuredClone(DEFAULT_TIERS),
     },
     reservations: { ...pr.reservations, daysAhead: 14 },
+    branches: makeBranches(a.lead.answers.branches, a.business.city, a.business.phone),
+    wallet: { topUps: [10, 25, 50, 100], bonusPercent: 10 },
+    tips: [0, 5, 10, 15],
     lead: a.lead,
   };
+}
+
+const BIRTHDAY: Record<string, { en: string; ar: string }> = {
+  restaurant: { en: 'Free birthday dessert 🎂', ar: 'حلوى مجانية في عيد ميلادك 🎂' },
+  cafe: { en: 'Free birthday drink 🎂', ar: 'مشروب مجاني في عيد ميلادك 🎂' },
+  retail: { en: '$15 birthday gift 🎂', ar: 'هدية 15$ في عيد ميلادك 🎂' },
+};
+
+function makeBranches(answer: string | undefined, city: string, phone: string) {
+  const n = !answer || answer === '1' ? 1 : answer.startsWith('2') ? 3 : answer.startsWith('6') ? 4 : 5;
+  return Array.from({ length: n }, (_, i) => ({
+    id: 'br' + (i + 1),
+    name: i === 0 && n === 1 ? { en: city || 'Main branch', ar: city || 'الفرع الرئيسي' } : BRANCH_NAMES[i % BRANCH_NAMES.length],
+    address: `${BRANCH_NAMES[i % BRANCH_NAMES.length].en} street ${10 + i * 7}${city ? ', ' + city : ''}`,
+    phone,
+  }));
+}
+
+/** Fill fields added in later versions, so older saved demos keep working. */
+export function migrateConfig(c: DemoConfig): DemoConfig {
+  const m = c.modules as Record<string, boolean>;
+  for (const k of ['wallet', 'tips', 'reviews', 'referrals', 'tableQr']) if (m[k] === undefined) m[k] = k === 'tips' || k === 'tableQr' ? c.industry !== 'retail' : true;
+  c.business.closedDays ??= [];
+  c.business.ordersPaused ??= false;
+  c.business.busyExtraMinutes ??= 0;
+  c.branches ??= makeBranches(c.lead?.answers?.branches, c.business.city, c.business.phone);
+  c.wallet ??= { topUps: [10, 25, 50, 100], bonusPercent: 10 };
+  c.tips ??= [0, 5, 10, 15];
+  c.loyalty.referralBonus ??= 100;
+  c.loyalty.birthdayReward ??= BIRTHDAY[c.industry];
+  (c.payments as Record<string, boolean>).wallet ??= m.wallet;
+  return c;
+}
+
+export function migrateData(d: DemoData, c: DemoConfig): DemoData {
+  d.favorites ??= [];
+  d.stockAlerts ??= [];
+  d.giftCards ??= [];
+  d.walletTx ??= [];
+  d.products.forEach((p) => (p.tags ??= []));
+  d.customers.forEach((x) => {
+    x.wallet ??= 0;
+    x.referralCode ??= (x.name.replace(/[^A-Za-z]/g, '').slice(0, 4).toUpperCase() || 'FRND') + code(3);
+  });
+  d.orders.forEach((o) => (o.tip ??= 0));
+  void c;
+  return d;
 }
 
 export function buildData(cfg: DemoConfig): DemoData {
@@ -80,10 +140,12 @@ export function buildData(cfg: DemoConfig): DemoData {
 
   const meId = 'me';
   const customers: Customer[] = [
-    { id: meId, name: cfg.defaultLang === 'ar' ? 'ضيف التجربة' : 'Demo Guest', phone: `${dial} 70 000 000`, points: 180, lifetimePoints: 620, stamps: Math.max(0, pr.stampsTarget - 2), joinedAt: now - 40 * DAY, lastSeenAt: now },
+    { id: meId, name: cfg.defaultLang === 'ar' ? 'ضيف التجربة' : 'Demo Guest', phone: `${dial} 70 000 000`, points: 180, lifetimePoints: 620, stamps: Math.max(0, pr.stampsTarget - 2), joinedAt: now - 40 * DAY, lastSeenAt: now, wallet: cfg.modules.wallet ? 12 : 0, referralCode: 'GUEST' + code(3) },
     ...NAMES.map((name, i) => ({
       id: 'c' + i, name, phone: phone(), points: 0, lifetimePoints: 0, stamps: 0,
       joinedAt: now - (10 + r(170)) * DAY, lastSeenAt: now - r(30) * DAY,
+      wallet: cfg.modules.wallet && r(3) === 0 ? 5 * (1 + r(10)) : 0, referralCode: name.split(' ')[0].toUpperCase().slice(0, 5) + code(3),
+      birthday: `${String(1 + r(12)).padStart(2, '0')}-${String(1 + r(28)).padStart(2, '0')}`,
     })),
   ];
 
@@ -117,6 +179,9 @@ export function buildData(cfg: DemoConfig): DemoData {
       table: f === 'dineIn' ? String(1 + r(20)) : undefined, payment: pays[r(pays.length)], paid: status === 'completed' || r(2) === 0,
       status, history: [{ status: 'pending', at }, ...(status !== 'pending' ? [{ status, at: at + 15 * 60000 }] : [])],
       createdAt: at, updatedAt: at + 15 * 60000, pointsEarned: pts, stampsEarned: sts,
+      tip: f !== 'delivery' && cfg.modules.tips && r(3) === 0 ? round2(subtotal * 0.1) : 0,
+      branchId: cfg.branches[r(cfg.branches.length)]?.id,
+      ...(status === 'completed' && cfg.modules.reviews && r(5) < 2 ? reviewFor(r) : {}),
     };
   };
 
@@ -202,6 +267,10 @@ export function buildData(cfg: DemoConfig): DemoData {
       { id: 's2', name: 'Lina', role: 'cashier', pin: '1111', active: true },
       { id: 's3', name: 'Omar', role: 'kitchen', pin: '2222', active: true },
     ],
+    favorites: [],
+    stockAlerts: [],
+    giftCards: [],
+    walletTx: cfg.modules.wallet ? [{ id: uid('w'), customerId: meId, amount: 12, kind: 'gift', note: 'Welcome credit', at: now - 5 * DAY }] : [],
     usedTokens: [],
     staticScans: [],
     tour: {},

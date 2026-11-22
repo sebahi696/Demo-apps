@@ -15,6 +15,7 @@ import { Orders, OrderDetail } from './Orders';
 import { Rewards, ScanEarn } from './Rewards';
 import Reserve from './Reserve';
 import { Account, Inbox } from './Account';
+import { Wallet, TableEntry } from './Wallet';
 
 /** Customer PWA. On desktop it sits in a phone frame; on a phone it is full-screen. */
 export default function CustomerApp() {
@@ -48,6 +49,8 @@ export default function CustomerApp() {
             <Route path="reserve" element={<Reserve />} />
             <Route path="account" element={<Account />} />
             <Route path="inbox" element={<Inbox />} />
+            <Route path="wallet" element={<Wallet />} />
+            <Route path="table/:table" element={<TableEntry />} />
           </Routes>
         </div>
         <CartBar />

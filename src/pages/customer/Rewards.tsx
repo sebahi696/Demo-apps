@@ -152,6 +152,7 @@ const sourceLabel = (s: string, tr: (a: string, b: string) => string) =>
   ({
     order: tr('Order', 'طلب'), qrStaff: tr('In-store QR', 'QR في المتجر'), qrStatic: tr('Counter QR', 'QR الكاشير'), reward: tr('Reward', 'مكافأة'),
     manual: tr('Adjustment', 'تعديل'), signup: tr('Welcome bonus', 'هدية الترحيب'), reservation: tr('Booking', 'حجز'),
+    referral: tr('Referral', 'إحالة'), review: tr('Review', 'تقييم'),
   })[s] ?? s;
 
 export function ScanEarn() {

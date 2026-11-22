@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Bell, QrCode, ShoppingBag, Gift, CalendarDays, Clock, MapPin, Phone, ChevronRight, RotateCcw, Plus } from 'lucide-react';
+import { Bell, QrCode, ShoppingBag, Gift, CalendarDays, Clock, MapPin, Phone, ChevronRight, RotateCcw, Plus, Wallet, ChevronDown, Heart, Check } from 'lucide-react';
 import { useDemo } from '../../lib/demo';
 import { toast } from '../../lib/store';
-import { me, nextTierOf, tierOf, statusLabel, statusTone, addToCart, productAvailable } from '../../lib/ops';
-import { cx, Thumb } from '../../components/ui';
+import { me, nextTierOf, tierOf, statusLabel, statusTone, addToCart, productAvailable, storeStatus } from '../../lib/ops';
+import { cx, Thumb, Modal } from '../../components/ui';
 
 export default function Home() {
   const { demo, cfg, data, tr, tl, m, terms, update } = useDemo();
@@ -19,13 +19,18 @@ export default function Home() {
   const popular = data.products.filter((p) => p.popular && p.active).slice(0, 6);
   const isNew = data.products.filter((p) => p.isNew && p.active).slice(0, 6);
   const deals = mod.deals ? data.deals.filter((d) => d.active && (!d.endsAt || d.endsAt > Date.now())) : [];
+  const favs = data.products.filter((p) => data.favorites.includes(p.id) && p.active);
+  const st = storeStatus(demo);
+  const [branchOpen, setBranchOpen] = useState(false);
+  const branch = cfg.branches.find((b) => b.id === data.branchId) ?? cfg.branches[0];
 
   const quick = [
     mod.ordering && { to: 'menu', icon: <ShoppingBag />, label: tr('Order', 'اطلب') },
     (mod.loyaltyPoints || mod.loyaltyStamps) && { to: 'scan', icon: <QrCode />, label: tr('Scan & earn', 'امسح واكسب') },
     (mod.loyaltyPoints || mod.loyaltyStamps) && { to: 'rewards', icon: <Gift />, label: tr('Rewards', 'المكافآت') },
     mod.reservations && { to: 'reserve', icon: <CalendarDays />, label: tl(terms.reserveCta) },
-  ].filter(Boolean) as { to: string; icon: JSX.Element; label: string }[];
+    mod.wallet && { to: 'wallet', icon: <Wallet />, label: tr('Wallet', 'المحفظة') },
+  ].filter(Boolean).slice(0, 4) as { to: string; icon: JSX.Element; label: string }[];
 
   return (
     <div className="absolute inset-0 overflow-y-auto overscroll-contain pb-28">
@@ -44,6 +49,19 @@ export default function Home() {
           </Link>
         </div>
         {tl(cfg.business.tagline) && <div className="mt-3 text-sm opacity-80">{tl(cfg.business.tagline)}</div>}
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-semibold">
+          <span className={cx('inline-flex items-center gap-1.5 rounded-full px-2.5 py-1', st.open ? 'bg-emerald-400/25' : 'bg-black/25')}>
+            <span className={cx('h-2 w-2 rounded-full', st.open ? 'bg-emerald-300' : st.paused ? 'bg-rose-300' : 'bg-amber-300')} />
+            {st.paused ? tr('Not taking orders', 'لا يستقبل الطلبات') : st.open ? tr(`Open · until ${st.closesAt}`, `مفتوح · حتى ${st.closesAt}`) : tr(`Closed · opens ${st.opensAt}`, `مغلق · يفتح ${st.opensAt}`)}
+            {st.open && st.extra > 0 && ` · +${st.extra} ${tr('min', 'د')}`}
+          </span>
+          {cfg.branches.length > 1 && (
+            <button onClick={() => setBranchOpen(true)} className="inline-flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1">
+              <MapPin size={12} /> {tl(branch?.name)} <ChevronDown size={12} />
+            </button>
+          )}
+          {data.cart.table && <span className="rounded-full bg-white/15 px-2.5 py-1">🍽️ {tr(`Table ${data.cart.table}`, `طاولة ${data.cart.table}`)}</span>}
+        </div>
       </div>
 
       <div className="px-4 -mt-10 space-y-5">
@@ -123,6 +141,7 @@ export default function Home() {
           </section>
         )}
 
+        {mod.ordering && favs.length > 0 && <ProductRow title={tr('Your favorites ❤️', 'مفضلتك ❤️')} items={favs.slice(0, 4)} />}
         {mod.ordering && <ProductRow title={tr('Most popular', 'الأكثر طلباً')} items={popular} />}
         {mod.ordering && isNew.length > 0 && <ProductRow title={tr('New', 'جديد')} items={isNew} />}
 
@@ -133,6 +152,18 @@ export default function Home() {
           {cfg.business.phone && <div className="flex items-center gap-2 text-gray-600"><Phone size={16} /> <span dir="ltr">{cfg.business.phone}</span></div>}
         </section>
       </div>
+      <Modal open={branchOpen} onClose={() => setBranchOpen(false)} contained title={tr('Choose a branch', 'اختر فرعاً')}>
+        <div className="space-y-2">
+          {cfg.branches.map((b) => (
+            <button key={b.id} onClick={() => { update((x) => void (x.data.branchId = b.id)); setBranchOpen(false); }}
+              className={cx('w-full flex items-center gap-3 rounded-app border p-3 text-start', branch?.id === b.id ? 'border-brand bg-brand/5' : 'border-gray-200')}>
+              <span className="h-10 w-10 rounded-full bg-brand/10 text-brand grid place-items-center"><MapPin size={18} /></span>
+              <span className="flex-1"><span className="block font-semibold">{tl(b.name)}</span><span className="block text-xs text-gray-500">{b.address}</span></span>
+              {branch?.id === b.id && <Check size={18} className="text-brand" />}
+            </button>
+          ))}
+        </div>
+      </Modal>
     </div>
   );
 
@@ -144,11 +175,15 @@ export default function Home() {
         <div className="grid grid-cols-2 gap-3">
           {items.map((p) => (
             <button key={p.id} onClick={() => nav(`menu?product=${p.id}`)} className="rounded-app bg-white border border-gray-100 shadow-sm p-2 text-start">
-              <Thumb emoji={p.emoji} image={p.image} bg={p.bg} size="xl" className="!h-28 !text-5xl" />
+              <div className="relative">
+                <Thumb emoji={p.emoji} image={p.image} bg={p.bg} size="xl" className="!h-28 !text-5xl" />
+                {p.compareAt && p.compareAt > p.price && <span className="absolute top-1.5 start-1.5 rounded-full bg-rose-600 text-white text-[10px] font-bold px-1.5 py-0.5">-{Math.round((1 - p.price / p.compareAt) * 100)}%</span>}
+                {data.favorites.includes(p.id) && <Heart size={16} className="absolute top-1.5 end-1.5 fill-rose-500 text-rose-500" />}
+              </div>
               <div className="px-1 pt-2">
                 <div className="font-semibold text-sm leading-tight line-clamp-1">{tl(p.name)}</div>
                 <div className="flex items-center justify-between mt-1.5">
-                  <span className="text-sm font-bold">{m(p.price)}</span>
+                  <span className="text-sm font-bold">{m(p.price)}{p.compareAt && p.compareAt > p.price && <span className="ms-1 text-xs text-gray-400 line-through font-normal">{m(p.compareAt)}</span>}</span>
                   <span className="h-7 w-7 rounded-full bg-brand text-onbrand grid place-items-center"><Plus size={16} /></span>
                 </div>
               </div>

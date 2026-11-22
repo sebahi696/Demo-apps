@@ -47,6 +47,16 @@ export function Loyalty() {
             </div>
           )}
           <div className="border-t border-gray-100 pt-4">
+            <Toggle checked={cfg.modules.referrals} onChange={(v) => update((d) => void (d.config.modules.referrals = v))} label={tr('Referrals & birthday rewards', 'الإحالات وهدايا عيد الميلاد')} desc={tr('Invite-a-friend codes and an automatic birthday gift', 'رموز دعوة الأصدقاء وهدية تلقائية في عيد الميلاد')} />
+          </div>
+          {cfg.modules.referrals && (
+            <div className="grid grid-cols-2 gap-3">
+              <Field label={tr('Referral bonus (points each)', 'مكافأة الإحالة (نقاط لكل طرف)')}><Input type="number" value={L.referralBonus} onChange={(e) => setL((l) => void (l.referralBonus = Math.max(0, +e.target.value)))} /></Field>
+              <Field label={tr('Birthday gift (English)', 'هدية عيد الميلاد (إنجليزي)')}><Input value={L.birthdayReward.en} onChange={(e) => setL((l) => void (l.birthdayReward.en = e.target.value))} /></Field>
+              <Field label={tr('Birthday gift (Arabic)', 'هدية عيد الميلاد (عربي)')} className="col-span-2"><Input dir="rtl" value={L.birthdayReward.ar ?? ''} onChange={(e) => setL((l) => void (l.birthdayReward.ar = e.target.value))} /></Field>
+            </div>
+          )}
+          <div className="border-t border-gray-100 pt-4">
             <Toggle checked={cfg.modules.loyaltyStamps} onChange={(v) => update((d) => void (d.config.modules.loyaltyStamps = v))} label={tr('Digital stamp card', 'بطاقة الأختام الرقمية')} desc={tr('Buy X, get one free', 'اشترِ عدداً واحصل على واحد مجاناً')} />
           </div>
           {cfg.modules.loyaltyStamps && (

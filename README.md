@@ -55,6 +55,9 @@ Sales console (#/sales)  —  share links (#/i/<config>) open a fresh copy on an
 * **Guided tour** (checklist icon): 10 tasks covering every feature. What the client actually used shows up in **My app plan** and in the Sales console.
 * **Simulate store activity** (⋯ menu): orders move through the statuses by themselves.
 
+### New in v2.1
+Opening days, **pause orders** and **busy mode** · **multi-branch** (branch picker, orders tagged by branch) · **dietary/label filters** (vegan, gluten-free, spicy, kids…) · **sale prices** with % badges · **favorites** · **back-in-stock alerts** · **wallet** (top-up with bonus, pay with wallet, refunds on cancel) · **gift cards** (buy, send, redeem) · **tips** at checkout · **ratings & reviews** with owner replies · **referral codes** and **birthday rewards** · **table QR codes** (print a sheet; scanning starts a dine-in order) · printable **kitchen/receipt tickets** · new owner pages: Reviews, Wallet & gifts. All switchable per business in Settings and in the questionnaire.
+
 ### Features in the demo
 
 **Customer app (PWA):** home with banners, deals with countdowns, loyalty card · menu/shop with search, option groups (sizes, add-ons, colors), stock · cart, promo codes, reward vouchers · checkout with delivery zones, fees, minimum order, pickup time, dine-in table, VAT, fake card / Apple Pay / Google Pay / cash · live order tracking · points, stamp card, VIP tiers, rewards catalog, voucher QR · scan-to-earn (staff dynamic QR + counter static QR with daily limit, cooldown and PIN) · table / visit booking · notifications inbox · language switch · install guide · account deletion.

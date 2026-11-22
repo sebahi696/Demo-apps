@@ -22,11 +22,16 @@ export type ModuleKey =
   | 'staticQr'
   | 'deals'
   | 'campaigns'
-  | 'reservations';
+  | 'reservations'
+  | 'wallet'
+  | 'tips'
+  | 'reviews'
+  | 'referrals'
+  | 'tableQr';
 
 export type Modules = Record<ModuleKey, boolean>;
 
-export type PaymentKey = 'card' | 'applePay' | 'googlePay' | 'cash';
+export type PaymentKey = 'card' | 'applePay' | 'googlePay' | 'cash' | 'wallet';
 
 export interface Tier {
   id: string;
@@ -42,6 +47,16 @@ export interface DeliveryZone {
   fee: number;
   eta: number; // minutes
 }
+
+export interface Branch {
+  id: string;
+  name: L;
+  address: string;
+  phone: string;
+}
+
+/** Product badges customers can filter by. */
+export type ProductTag = 'vegan' | 'vegetarian' | 'glutenFree' | 'spicy' | 'healthy' | 'kids' | 'sugarFree' | 'organic' | 'bestseller' | 'limited' | 'eco';
 
 export interface DemoConfig {
   id: string;
@@ -66,7 +81,11 @@ export interface DemoConfig {
     currency: string;
     openTime: string; // "08:00"
     closeTime: string; // "23:00"
+    closedDays: number[]; // 0 = Sunday
+    ordersPaused: boolean;
+    busyExtraMinutes: number;
   };
+  branches: Branch[];
   brand: {
     primary: string;
     secondary: string;
@@ -92,9 +111,16 @@ export interface DemoConfig {
     stampRule: 'perOrder' | 'perItem';
     stampCategoryIds: string[]; // empty = all categories
     signupBonus: number;
+    referralBonus: number;
+    birthdayReward: L;
     staticQr: { dailyLimit: number; cooldownMinutes: number; requirePin: boolean; pin: string };
     tiers: Tier[];
   };
+  wallet: {
+    topUps: number[];
+    bonusPercent: number; // extra credit on top-ups
+  };
+  tips: number[]; // percent options
   reservations: {
     slotMinutes: number;
     capacityPerSlot: number;
@@ -129,6 +155,8 @@ export interface Product {
   name: L;
   desc: L;
   price: number;
+  compareAt?: number; // original price when on sale
+  tags: ProductTag[];
   emoji: string;
   bg: string;
   image?: string;
@@ -183,6 +211,10 @@ export interface Customer {
   stamps: number;
   joinedAt: number;
   lastSeenAt: number;
+  wallet: number;
+  birthday?: string; // MM-DD
+  referralCode: string;
+  referredBy?: string;
 }
 
 export interface CartItem {
@@ -239,6 +271,11 @@ export interface Order {
   note?: string;
   pointsEarned: number;
   stampsEarned: number;
+  tip: number;
+  branchId?: string;
+  rating?: number;
+  review?: string;
+  reply?: string;
 }
 
 export type ReservationStatus = 'pending' | 'confirmed' | 'seated' | 'completed' | 'cancelled' | 'noShow';
@@ -251,11 +288,12 @@ export interface Reservation {
   time: string; // HH:mm
   party: number;
   note?: string;
+  branchId?: string;
   status: ReservationStatus;
   createdAt: number;
 }
 
-export type LedgerSource = 'order' | 'qrStaff' | 'qrStatic' | 'reward' | 'manual' | 'signup' | 'reservation';
+export type LedgerSource = 'order' | 'qrStaff' | 'qrStatic' | 'reward' | 'manual' | 'signup' | 'reservation' | 'referral' | 'review';
 export interface LedgerEntry {
   id: string;
   customerId: string;
@@ -274,7 +312,7 @@ export interface Voucher {
   rewardId: string;
   name: L;
   emoji: string;
-  kind: RewardKind | 'stampCard';
+  kind: RewardKind | 'stampCard' | 'birthday';
   value: number;
   productId?: string;
   status: 'active' | 'used';
@@ -309,6 +347,26 @@ export interface StaffMember {
   active: boolean;
 }
 
+export interface GiftCard {
+  code: string;
+  amount: number;
+  fromName: string;
+  toName: string;
+  message: string;
+  createdAt: number;
+  redeemedBy?: string;
+  redeemedAt?: number;
+}
+
+export interface WalletTx {
+  id: string;
+  customerId: string;
+  amount: number; // + top-up / gift, - payment
+  kind: 'topup' | 'bonus' | 'payment' | 'gift' | 'refund';
+  note?: string;
+  at: number;
+}
+
 export interface DemoData {
   categories: Category[];
   products: Product[];
@@ -317,7 +375,7 @@ export interface DemoData {
   banners: Banner[];
   customers: Customer[];
   meId: string;
-  cart: { items: CartItem[]; couponCode?: string; voucherId?: string };
+  cart: { items: CartItem[]; couponCode?: string; voucherId?: string; table?: string };
   orders: Order[];
   reservations: Reservation[];
   ledger: LedgerEntry[];
@@ -327,6 +385,11 @@ export interface DemoData {
   staff: StaffMember[];
   usedTokens: string[];
   staticScans: number[]; // timestamps of the demo user's static-QR claims
+  favorites: string[];
+  stockAlerts: string[]; // product ids the demo customer wants to hear about
+  giftCards: GiftCard[];
+  walletTx: WalletTx[];
+  branchId?: string; // the demo customer's chosen branch
   tour: Record<string, boolean>;
   activity: Record<string, number>;
   nextOrderNumber: number;

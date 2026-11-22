@@ -1,11 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Check, Phone, RotateCcw, Truck, Store, UtensilsCrossed, ChevronRight } from 'lucide-react';
+import { Check, Phone, RotateCcw, Truck, Store, UtensilsCrossed, ChevronRight, Star } from 'lucide-react';
 import { useDemo } from '../../lib/demo';
 import { toast } from '../../lib/store';
-import { addToCart, flowFor, productAvailable, setOrderStatus, statusLabel, statusTone } from '../../lib/ops';
+import { addToCart, flowFor, productAvailable, setOrderStatus, statusLabel, statusTone, rateOrder } from '../../lib/ops';
 import { fmtDate, fmtTime, timeAgo } from '../../lib/utils';
-import { Button, Empty, Thumb, cx } from '../../components/ui';
+import { Button, Empty, Thumb, cx, Input } from '../../components/ui';
 import { Screen } from './CustomerApp';
 
 export function Orders() {
@@ -134,10 +134,13 @@ export function OrderDetail() {
           <div className="flex justify-between"><span>{tr('Subtotal', 'المجموع الفرعي')}</span><span>{m(o.subtotal)}</span></div>
           {o.discount > 0 && <div className="flex justify-between text-emerald-700"><span>{tr('Discount', 'الخصم')}</span><span>−{m(o.discount)}</span></div>}
           {o.fulfillment === 'delivery' && <div className="flex justify-between"><span>{tl(terms.delivery)}</span><span>{o.deliveryFee ? m(o.deliveryFee) : tr('Free', 'مجاني')}</span></div>}
+          {o.tip > 0 && <div className="flex justify-between"><span>{tr('Tip', 'الإكرامية')}</span><span>{m(o.tip)}</span></div>}
           <div className="flex justify-between font-extrabold text-base pt-1"><span>{tr('Total', 'الإجمالي')}</span><span>{m(o.total)}</span></div>
           <div className="text-xs text-gray-500">{o.paid ? tr('Paid', 'مدفوع') : tr('To pay on collection', 'الدفع عند الاستلام')} · {o.payment}</div>
         </div>
       </div>
+
+      {cfg.modules.reviews && o.status === 'completed' && <RateBox orderId={o.id} />}
 
       <div className="mt-4 grid grid-cols-2 gap-2">
         {cfg.business.phone ? (
@@ -154,5 +157,41 @@ export function OrderDetail() {
       </div>
       <div className="text-center text-xs text-gray-400 mt-4">{tr('Placed', 'تم الطلب')} {timeAgo(o.createdAt, lang)}</div>
     </Screen>
+  );
+}
+
+function RateBox({ orderId }: { orderId: string }) {
+  const { data, tr, update } = useDemo();
+  const o = data.orders.find((x) => x.id === orderId)!;
+  const [stars, setStars] = useState(0);
+  const [text, setText] = useState('');
+  if (o.rating)
+    return (
+      <div className="mt-4 rounded-app bg-white border border-gray-100 p-4">
+        <div className="text-sm text-gray-500">{tr('Your rating', 'تقييمك')}</div>
+        <div className="flex gap-0.5 mt-1">{[1, 2, 3, 4, 5].map((i) => <Star key={i} size={20} className={i <= o.rating! ? 'fill-amber-400 text-amber-400' : 'text-gray-300'} />)}</div>
+        {o.review && <div className="text-sm mt-2">“{o.review}”</div>}
+        {o.reply && <div className="mt-3 rounded-lg bg-gray-50 p-2.5 text-sm"><b>{tr('Reply from the store', 'رد المتجر')}:</b> {o.reply}</div>}
+      </div>
+    );
+  return (
+    <div className="mt-4 rounded-app border-2 border-brand/30 bg-white p-4">
+      <div className="font-bold">{tr('How was your order?', 'كيف كان طلبك؟')}</div>
+      <div className="flex gap-1 mt-2">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <button key={i} onClick={() => setStars(i)} aria-label={`${i}`}><Star size={32} className={i <= stars ? 'fill-amber-400 text-amber-400' : 'text-gray-300'} /></button>
+        ))}
+      </div>
+      {stars > 0 && (
+        <>
+          <Input className="mt-3" value={text} onChange={(e) => setText(e.target.value)} placeholder={tr('Tell us more (optional)', 'أخبرنا المزيد (اختياري)')} />
+          <Button block className="mt-2" onClick={() => {
+            let b = 0;
+            update((d) => void (b = rateOrder(d, orderId, stars, text)));
+            toast(b ? tr(`Thanks! +${b} points`, `شكراً! +${b} نقطة`) : tr('Thanks for your feedback!', 'شكراً لرأيك!'));
+          }}>{tr('Send rating', 'أرسل التقييم')}</Button>
+        </>
+      )}
+    </div>
   );
 }
