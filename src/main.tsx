@@ -6,6 +6,16 @@ import './index.css';
 
 // Keep installed copies up to date: check for a new version on start, every
 // minute, and whenever the app comes back to the foreground; reload when found.
+// When a new version takes over, reload once so the screen shows it.
+if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (reloaded) return;
+    reloaded = true;
+    location.reload();
+  });
+}
+
 const updateSW = registerSW({
   immediate: true,
   onNeedRefresh() {
