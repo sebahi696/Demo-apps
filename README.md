@@ -4,7 +4,7 @@ A prospect answers a short questionnaire and gets a **working, branded app**: a 
 
 Industries: **Restaurant · Café · Retail** (Salon, Clinic, Gym shown as "coming soon").
 Languages: **English + Arabic** (full RTL).
-Hosting: **GitHub Pages, free**. There is no server and no database.
+Hosting: **GitHub Pages, free**. Business data stays in each visitor's browser. Only a lead summary goes to a small Supabase table, so sales can see every demo.
 
 ---
 
@@ -34,7 +34,7 @@ Edit **`src/platform.config.ts`**:
 | `name`, `tagline` | Your agency / product name on the landing page |
 | `salesWhatsApp`, `salesEmail` | "Talk to us" buttons in the demo, the plan page and the expired screen |
 | `trialDays` | How long a demo stays open (default 14) |
-| `salesPasscode` | Passcode for the Sales console at `#/sales` (default `2468`) |
+| `cloud` | Supabase URL + publishable key. Every demo reports a summary (business, contact, answers, what was tried) so the Sales console sees demos from **all devices** |
 | `leadWebhook` | Optional Formspree / Make / Zapier / Google Apps Script URL. Every questionnaire is POSTed there as JSON, so you get leads by email or in a sheet |
 
 Replace `public/icon.svg` and the PNGs with your own logo.
@@ -99,5 +99,11 @@ The demo code is the starting point for the real app:
 ## Known limits (by design, it's a demo)
 * Data lives on one device. A share link creates a copy, not a synced account.
 * Payments are simulated. No money moves.
-* The Sales passcode is client-side only. Don't put secrets in it.
+* The Sales passcode is checked on the server. To change it, run this in the Supabase SQL editor:
+  `update demo_studio.settings set value = extensions.crypt('NEW-CODE', extensions.gen_salt('bf')) where key = 'sales_passcode_hash';`
+
+## Cloud lead database (Supabase)
+Schema `demo_studio` (table `leads`, locked with RLS) plus RPC functions `demo_studio_upsert` (public: a demo reports itself), and `demo_studio_list / _extend / _delete / _check` (need the sales passcode).
+* Extending a trial (+7) in the Sales console reaches the client's phone the next time they open the app.
+* "Preview" opens a private copy of a client's demo on your device, and that copy is never reported back.
 * On iPhone, PWA push notifications only work after "Add to Home Screen" (iOS 16.4+). In-app notifications always work.

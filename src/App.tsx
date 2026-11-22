@@ -9,6 +9,7 @@ import Wizard from './pages/Wizard';
 import Sales from './pages/Sales';
 import ImportDemo from './pages/ImportDemo';
 import DemoLayout from './pages/DemoLayout';
+import { startCloudSync } from './lib/cloud';
 
 function PlatformTheme() {
   const lang = useStore((s) => s.lang);
@@ -22,6 +23,9 @@ function PlatformTheme() {
 
 export default function App() {
   const hydrated = useStore((s) => s.hydrated);
+  useEffect(() => {
+    if (hydrated) startCloudSync();
+  }, [hydrated]);
   if (!hydrated)
     return (
       <div className="h-full grid place-items-center">

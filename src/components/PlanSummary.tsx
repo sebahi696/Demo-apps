@@ -42,12 +42,12 @@ export const PAY_LABEL: Record<PaymentKey, { en: string; ar: string }> = {
 };
 
 /** The "requirements" one-pager: what they asked for + what they actually tried. */
-export function PlanSummary({ demo, showCta = true }: { demo: Demo; showCta?: boolean }) {
+export function PlanSummary({ demo, showCta = true, productsAdded }: { demo: Demo; showCta?: boolean; productsAdded?: number }) {
   const { tr, tl, lang } = useI18n();
   const c = demo.config;
   const on = (Object.keys(c.modules) as ModuleKey[]).filter((k) => c.modules[k]);
   const used = Object.entries(demo.data.activity).sort((a, b) => b[1] - a[1]);
-  const ownProducts = demo.data.products.filter((p) => !/^p\d+$/.test(p.id)).length;
+  const ownProducts = productsAdded ?? demo.data.products.filter((p) => !/^p\d+$/.test(p.id)).length;
   const msg = encodeURIComponent(`Hi! I tried the ${c.business.name.en} demo app and I'd like to talk about building it.`);
 
   return (

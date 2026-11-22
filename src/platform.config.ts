@@ -15,8 +15,16 @@ export const PLATFORM = {
   salesEmail: 'hello@example.com',
   /** How long a generated demo stays open */
   trialDays: 14,
-  /** Passcode for the Sales Console (#/sales). Client-side only: a speed bump, not security. */
-  salesPasscode: '2468',
+  /**
+   * Cloud lead database (Supabase). Every demo reports itself here so the
+   * Sales console (#/sales) sees demos made on ANY phone or computer.
+   * The sales passcode is checked on the server, not stored in this code.
+   * Leave url empty to run fully offline (Sales console then shows this device only).
+   */
+  cloud: {
+    url: 'https://tgrhopkylqcwhwtabptb.supabase.co',
+    key: 'sb_publishable_uhdOULA0owOePhMTU2cwmw_GrTr3MxH',
+  },
   /**
    * Optional: receive every questionnaire as a lead.
    * Paste a Formspree / Web3Forms / Make / Zapier / Google Apps Script URL.

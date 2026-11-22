@@ -48,6 +48,11 @@ export interface DemoConfig {
   createdAt: number;
   expiresAt: number;
   industry: Industry;
+  /** 'wizard' = made from the questionnaire, 'shared' = opened from a share link */
+  origin?: 'wizard' | 'shared';
+  parentId?: string;
+  /** Sales-console preview copies are never reported to the cloud */
+  noSync?: boolean;
   business: {
     name: L;
     tagline: L;

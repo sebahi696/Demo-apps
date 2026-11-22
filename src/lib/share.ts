@@ -19,6 +19,9 @@ export function importFromPayload(payload: string) {
   if (!json) throw new Error('bad link');
   const src = JSON.parse(json) as DemoConfig;
   const now = Date.now();
-  const config: DemoConfig = { ...src, id: uid('d'), createdAt: now, expiresAt: Math.max(src.expiresAt, now + PLATFORM.trialDays * DAY) };
+  const config: DemoConfig = {
+    ...src, id: uid('d'), createdAt: now, expiresAt: Math.max(src.expiresAt, now + PLATFORM.trialDays * DAY),
+    origin: 'shared', parentId: src.parentId ?? src.id, noSync: false,
+  };
   return { config, data: buildData(config) };
 }

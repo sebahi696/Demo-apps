@@ -47,6 +47,7 @@ export function buildConfig(a: WizardAnswers): DemoConfig {
     createdAt: now,
     expiresAt: now + PLATFORM.trialDays * DAY,
     industry: a.industry,
+    origin: 'wizard',
     business: { ...a.business, name: { en: name.en.trim(), ar: (name.ar || '').trim() || undefined } },
     brand: a.brand,
     defaultLang: a.defaultLang,
