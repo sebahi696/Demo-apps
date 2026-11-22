@@ -102,7 +102,7 @@ export default function Landing() {
 
       <footer className="border-t border-gray-100">
         <div className="max-w-6xl mx-auto px-5 py-6 flex items-center justify-between text-sm text-gray-500">
-          <span>© {new Date().getFullYear()} {PLATFORM.name}</span>
+          <span>© {new Date().getFullYear()} {PLATFORM.name} · v{__APP_VERSION__}</span>
           <Link to="/sales" className="inline-flex items-center gap-1 hover:text-gray-900">
             <Lock size={14} /> {tr('Sales console', 'لوحة المبيعات')}
           </Link>

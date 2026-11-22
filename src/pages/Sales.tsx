@@ -155,7 +155,7 @@ export default function Sales() {
       <header className="bg-gray-950 text-white">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center gap-3">
           <button onClick={() => nav('/')} className="h-10 w-10 grid place-items-center rounded-full hover:bg-white/10"><ArrowLeft className="rtl:rotate-180" size={20} /></button>
-          <div className="font-bold flex-1">{tr('Sales console', 'لوحة المبيعات')}</div>
+          <div className="font-bold flex-1">{tr('Sales console', 'لوحة المبيعات')} <span className="text-xs text-white/40 font-normal">v{__APP_VERSION__}</span></div>
           <button onClick={() => { sessionStorage.removeItem('sales-pass'); setOk(false); setPin(''); }} className="text-sm text-white/60 hover:text-white me-2">{tr('Lock', 'قفل')}</button>
           <LangToggle dark />
         </div>

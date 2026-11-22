@@ -8,10 +8,11 @@ const base = process.env.BASE_PATH || '/';
 export default defineConfig({
   base,
   build: { chunkSizeWarningLimit: 900 },
+  define: { __APP_VERSION__: JSON.stringify('2.0') },
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       includeAssets: ['icon.svg', 'apple-touch-icon.png'],
       manifest: {
         name: 'Demo Studio',
@@ -29,6 +30,9 @@ export default defineConfig({
         ],
       },
       workbox: {
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
         runtimeCaching: [
