@@ -3,7 +3,7 @@ import { Plus, Search, Upload, Trash2, Star, FolderCog, X } from 'lucide-react';
 import { useDemo } from '../../lib/demo';
 import { toast } from '../../lib/store';
 import { tourDone, restocked } from '../../lib/ops';
-import { TAGS } from '../../lib/presets';
+import { TAGS, ALLERGENS } from '../../lib/presets';
 import type { Category, OptionGroup, Product, ProductTag } from '../../lib/types';
 import { resizeImage, uid } from '../../lib/utils';
 import { Badge, Button, Card, Field, Input, Modal, Select, Textarea, Thumb, Toggle, cx } from '../../components/ui';
@@ -146,6 +146,20 @@ function ProductEditor({ p: initial, onClose }: { p: Product; onClose: () => voi
             <Toggle checked={!!p.isNew} onChange={(v) => set({ isNew: v })} label={tr('“New” badge', 'شارة "جديد"')} />
             <Toggle checked={p.stock !== null} onChange={(v) => set({ stock: v ? 20 : null })} label={tr('Track stock', 'تتبع المخزون')} />
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label={tr('Calories (kcal)', 'السعرات')}><Input type="number" value={p.calories ?? ''} onChange={(e) => set({ calories: e.target.value ? +e.target.value : undefined })} /></Field>
+            <Field label={tr('Prep time (min)', 'وقت التحضير (د)')} hint={tr('60+ shows “order ahead”', '60+ يظهر "اطلب مسبقاً"')}><Input type="number" value={p.prepMinutes ?? ''} onChange={(e) => set({ prepMinutes: e.target.value ? +e.target.value : undefined })} /></Field>
+          </div>
+          <div>
+            <div className="text-sm font-medium text-gray-700 mb-1.5">{tr('Allergens (shown as “Contains…”)', 'مسببات الحساسية (تظهر كـ "يحتوي على…")')}</div>
+            <div className="flex flex-wrap gap-1.5">
+              {Object.keys(ALLERGENS).map((a) => {
+                const on = p.allergens?.includes(a);
+                return <button key={a} type="button" onClick={() => set({ allergens: on ? (p.allergens ?? []).filter((x) => x !== a) : [...(p.allergens ?? []), a] })}
+                  className={cx('rounded-full px-2.5 py-1 text-xs font-semibold border', on ? 'bg-amber-500 text-white border-amber-500' : 'bg-white border-gray-200')}>{ALLERGENS[a].icon} {tl(ALLERGENS[a])}</button>;
+              })}
+            </div>
+          </div>
           <div>
             <div className="text-sm font-medium text-gray-700 mb-1.5">{tr('Labels (customers can filter by these)', 'الشارات (يمكن للزبائن التصفية بها)')}</div>
             <div className="flex flex-wrap gap-1.5">
@@ -173,6 +187,7 @@ function ProductEditor({ p: initial, onClose }: { p: Product; onClose: () => voi
                 <Input dir="rtl" value={g.name.ar ?? ''} onChange={(e) => setGroup(gi, { name: { ...g.name, ar: e.target.value } })} className="!h-9 !w-36" placeholder="المجموعة" />
                 <label className="flex items-center gap-1.5 text-sm"><input type="checkbox" checked={g.required} onChange={(e) => setGroup(gi, { required: e.target.checked })} /> {tr('Required', 'إلزامي')}</label>
                 <label className="flex items-center gap-1.5 text-sm"><input type="checkbox" checked={g.multi} onChange={(e) => setGroup(gi, { multi: e.target.checked })} /> {tr('Multiple', 'متعدد')}</label>
+                {g.multi && <label className="flex items-center gap-1.5 text-sm">{tr('max', 'حد أقصى')} <Input type="number" min={0} value={g.max ?? ''} onChange={(e) => setGroup(gi, { max: e.target.value ? +e.target.value : undefined })} className="!h-8 !w-14 !px-2" /></label>}
                 <button className="ms-auto text-rose-600" onClick={() => setP((x) => ({ ...x, groups: x.groups.filter((_, i) => i !== gi) }))}><Trash2 size={16} /></button>
               </div>
               <div className="mt-2 space-y-1.5">
@@ -199,7 +214,8 @@ function CategoryManager({ open, onClose }: { open: boolean; onClose: () => void
   const { data, tr, update } = useDemo();
   const [draft, setDraft] = useState<Category>({ id: '', name: { en: '', ar: '' }, emoji: '🍽️' });
   return (
-    <Modal open={open} onClose={onClose} title={tr('Categories', 'الفئات')}>
+    <Modal open={open} onClose={onClose} title={tr('Categories', 'الفئات')} size="lg">
+      <p className="text-xs text-gray-500 mb-3">{tr('Optional times limit a category, e.g. Breakfast 07:00–11:30.', 'الأوقات اختيارية لتحديد فئة، مثلاً الفطور 07:00–11:30.')}</p>
       <div className="space-y-2">
         {data.categories.map((c, i) => {
           const count = data.products.filter((p) => p.categoryId === c.id).length;
@@ -208,6 +224,8 @@ function CategoryManager({ open, onClose }: { open: boolean; onClose: () => void
               <Input value={c.emoji} onChange={(e) => update((d) => void (d.data.categories[i].emoji = e.target.value))} className="!w-12 !px-1 text-center" />
               <Input value={c.name.en} onChange={(e) => update((d) => void (d.data.categories[i].name.en = e.target.value))} />
               <Input dir="rtl" value={c.name.ar ?? ''} onChange={(e) => update((d) => void (d.data.categories[i].name.ar = e.target.value))} />
+              <Input type="time" title={tr('Available from', 'متاح من')} value={c.availableFrom ?? ''} onChange={(e) => update((d) => void (d.data.categories[i].availableFrom = e.target.value || undefined))} className="!w-28 !px-2" />
+              <Input type="time" title={tr('until', 'حتى')} value={c.availableTo ?? ''} onChange={(e) => update((d) => void (d.data.categories[i].availableTo = e.target.value || undefined))} className="!w-28 !px-2" />
               <button disabled={count > 0} title={count ? tr('Move or delete its items first', 'انقل منتجاتها أو احذفها أولاً') : ''} className="text-rose-600 disabled:text-gray-300 shrink-0 w-6" onClick={() => update((d) => void (d.data.categories = d.data.categories.filter((x) => x.id !== c.id)))}>
                 <Trash2 size={16} />
               </button>

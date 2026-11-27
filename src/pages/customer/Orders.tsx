@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Check, Phone, RotateCcw, Truck, Store, UtensilsCrossed, ChevronRight, Star } from 'lucide-react';
 import { useDemo } from '../../lib/demo';
+import { CLIENT_MODE } from '../../lib/client';
 import { toast } from '../../lib/store';
 import { addToCart, flowFor, productAvailable, setOrderStatus, statusLabel, statusTone, rateOrder } from '../../lib/ops';
 import { fmtDate, fmtTime, timeAgo } from '../../lib/utils';
@@ -76,7 +77,8 @@ export function OrderDetail() {
       <div className="rounded-app-lg bg-brand text-onbrand p-5 relative overflow-hidden">
         <div className="text-sm opacity-80">{cancelled ? '' : o.status === 'completed' ? tr('All done', 'تم') : tr('Status', 'الحالة')}</div>
         <div className="font-display font-bold text-2xl mt-0.5">{tl(statusLabel(o.status, cfg.industry, o.fulfillment))}</div>
-        {!cancelled && o.status !== 'completed' && (
+        {o.scheduledFor && o.status !== 'completed' && <div className="text-sm opacity-90 mt-1">🗓️ {tr('Scheduled for', 'مجدول لـ')} {fmtDate(o.scheduledFor, lang, { weekday: 'short', hour: 'numeric', minute: '2-digit' })}</div>}
+        {!o.scheduledFor && !cancelled && o.status !== 'completed' && (
           <div className="text-sm opacity-80 mt-1">{tr(`Estimated ${cfg.fulfillment.prepMinutes + (o.fulfillment === 'delivery' ? 20 : 0)} min`, `الوقت المتوقع ${cfg.fulfillment.prepMinutes + (o.fulfillment === 'delivery' ? 20 : 0)} دقيقة`)}</div>
         )}
         <div className="absolute -end-4 -bottom-6 text-8xl opacity-20">{o.items[0]?.emoji}</div>
@@ -120,7 +122,7 @@ export function OrderDetail() {
               </div>
             );
           })}
-          {o.status === 'pending' && (
+          {o.status === 'pending' && !CLIENT_MODE && (
             <div className="text-xs text-gray-500 bg-gray-50 rounded-lg p-2.5">
               💡 {tr('Tip: switch to Staff (top bar) to accept this order — or turn on “Simulate store activity” in the ⋯ menu.', 'نصيحة: انتقل إلى الموظف (الشريط العلوي) لقبول هذا الطلب — أو فعّل "محاكاة نشاط المتجر" من القائمة ⋯.')}
             </div>

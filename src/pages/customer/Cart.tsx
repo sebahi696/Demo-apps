@@ -119,7 +119,7 @@ export function Checkout() {
   const [zone, setZone] = useState(cfg.fulfillment.zones[0]?.id);
   const [address, setAddress] = useState('');
   const [table, setTable] = useState(data.cart.table ?? '');
-  const [when, setWhen] = useState('asap');
+  const [when, setWhen] = useState<'asap' | number>('asap');
   const pays = (Object.keys(cfg.payments) as PaymentKey[]).filter((k) => cfg.payments[k] && (k !== 'wallet' || cfg.modules.wallet));
   const [pay, setPay] = useState<PaymentKey>(pays[0] ?? 'cash');
   const [note, setNote] = useState('');
@@ -136,7 +136,7 @@ export function Checkout() {
   }
 
   const fIcon = { delivery: <Truck size={18} />, pickup: <Store size={18} />, dineIn: <UtensilsCrossed size={18} /> };
-  const fLabel = { delivery: tl(terms.delivery), pickup: cfg.industry === 'retail' ? tr('Click & collect', 'استلام من المتجر') : tr('Pickup', 'استلام'), dineIn: tr('Dine-in', 'في المطعم') };
+  const fLabel = { delivery: tl(terms.delivery), pickup: tr('Pickup', 'استلام'), dineIn: tr('Dine-in', 'في المطعم') };
   const payLabel: Record<PaymentKey, string> = { card: tr('Card', 'بطاقة'), applePay: 'Apple Pay', googlePay: 'Google Pay', cash: f === 'delivery' ? tr('Cash on delivery', 'الدفع عند الاستلام') : tr('Pay at store', 'الدفع في المتجر'), wallet: tr('App wallet', 'محفظة التطبيق') };
   const payIcon: Record<PaymentKey, JSX.Element> = { card: <CreditCard size={18} />, applePay: <span className="text-[9px] font-extrabold bg-black text-white rounded px-1">Pay</span>, googlePay: <span className="font-bold">G</span>, cash: <Banknote size={18} />, wallet: <Wallet size={18} /> };
 
@@ -152,9 +152,8 @@ export function Checkout() {
   const finish = () => {
     let id = '';
     placed.current = true;
-    const whenNote = f === 'pickup' && when !== 'asap' ? `Pickup in ${when} min` : '';
-    const preNote = !status.open ? `Pre-order for opening (${status.opensAt})` : '';
-    update((d) => void (id = placeOrder(d, { fulfillment: f, zoneId: f === 'delivery' ? zone : undefined, address, table, payment: pay, tipPct, note: [note, whenNote, preNote].filter(Boolean).join(' · ') || undefined }).id));
+    const preNote = !status.open && when === 'asap' ? `Pre-order for opening (${status.opensAt})` : '';
+    update((d) => void (id = placeOrder(d, { fulfillment: f, zoneId: f === 'delivery' ? zone : undefined, address, table, payment: pay, tipPct, scheduledFor: typeof when === 'number' ? when : undefined, note: [note, preNote].filter(Boolean).join(' · ') || undefined }).id));
     setPaying(false);
     nav(`../orders/${id}?new=1`, { replace: true });
   };
@@ -200,17 +199,8 @@ export function Checkout() {
             )}
           </>
         )}
-        {f === 'pickup' && (
-          <>
-            <div className="font-bold">{tr('When?', 'متى؟')}</div>
-            <div className="flex gap-2">
-              {[['asap', tr(`ASAP (~${cfg.fulfillment.prepMinutes} min)`, `بأسرع وقت (~${cfg.fulfillment.prepMinutes} د)`)], ['30', tr('In 30 min', 'بعد 30 د')], ['60', tr('In 1 hour', 'بعد ساعة')]].map(([k, l]) => (
-                <button key={k} onClick={() => setWhen(k)} className={cx('flex-1 rounded-app border py-2 text-xs font-semibold', when === k ? 'border-brand bg-brand/5 text-brand' : 'border-gray-200')}>{l}</button>
-              ))}
-            </div>
-            <div className="text-xs text-gray-500">{[cfg.business.address, cfg.business.city].filter(Boolean).join(', ') || tl(cfg.business.name)}</div>
-          </>
-        )}
+        {f !== 'dineIn' && <WhenPicker when={when} setWhen={setWhen} />}
+        {f === 'pickup' && <div className="text-xs text-gray-500">📍 {[cfg.business.address, cfg.business.city].filter(Boolean).join(', ') || tl(cfg.business.name)}</div>}
         {f === 'dineIn' && (
           <>
             <div className="font-bold">{tr('Table number', 'رقم الطاولة')}</div>
@@ -315,4 +305,49 @@ function PaySheet({ method, amount, onDone, onCancel }: { method: PaymentKey; am
 
 export function TrashBtn({ onClick }: { onClick: () => void }) {
   return <button onClick={onClick} className="h-8 w-8 grid place-items-center text-gray-400"><Trash2 size={16} /></button>;
+}
+
+/** ASAP, or a time slot today / tomorrow within opening hours. */
+function WhenPicker({ when, setWhen }: { when: 'asap' | number; setWhen: (v: 'asap' | number) => void }) {
+  const { cfg, tr, lang } = useDemo();
+  const [day, setDay] = useState(0);
+  const prep = cfg.fulfillment.prepMinutes + cfg.business.busyExtraMinutes;
+  const slots = (() => {
+    const base = new Date();
+    base.setDate(base.getDate() + day);
+    const [oh, om] = cfg.business.openTime.split(':').map(Number);
+    const [ch, cm] = cfg.business.closeTime.split(':').map(Number);
+    const open = new Date(base); open.setHours(oh, om, 0, 0);
+    const close = new Date(base); close.setHours(ch, cm, 0, 0);
+    if (close <= open) close.setDate(close.getDate() + 1);
+    const earliest = Date.now() + (prep + 15) * 60000;
+    const out: number[] = [];
+    for (let t = open.getTime() + 30 * 60000; t <= close.getTime() - 15 * 60000; t += 30 * 60000) if (t >= earliest) out.push(t);
+    return out.slice(0, 24);
+  })();
+  const fmt = (t: number) => new Intl.DateTimeFormat(lang === 'ar' ? 'ar-u-nu-latn' : 'en', { hour: 'numeric', minute: '2-digit' }).format(t);
+  return (
+    <div className="space-y-2">
+      <div className="font-bold">{tr('When?', 'متى؟')}</div>
+      <div className="grid grid-cols-2 gap-2">
+        <button onClick={() => setWhen('asap')} className={cx('rounded-app border py-2.5 text-sm font-semibold', when === 'asap' ? 'border-brand bg-brand/5 text-brand' : 'border-gray-200')}>⚡ {tr(`ASAP · ~${prep} min`, `بأسرع وقت · ~${prep} د`)}</button>
+        <button onClick={() => setWhen(slots[0] ?? 'asap')} className={cx('rounded-app border py-2.5 text-sm font-semibold', when !== 'asap' ? 'border-brand bg-brand/5 text-brand' : 'border-gray-200')}>🗓️ {tr('Schedule', 'جدولة')}</button>
+      </div>
+      {when !== 'asap' && (
+        <>
+          <div className="flex gap-2">
+            {[tr('Today', 'اليوم'), tr('Tomorrow', 'غداً')].map((l, i) => (
+              <button key={l} onClick={() => setDay(i)} className={cx('rounded-full px-3 py-1 text-xs font-semibold border', day === i ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200')}>{l}</button>
+            ))}
+          </div>
+          <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
+            {slots.map((t) => (
+              <button key={t} onClick={() => setWhen(t)} dir="ltr" className={cx('shrink-0 rounded-lg border px-2.5 py-1.5 text-xs font-semibold', when === t ? 'border-brand bg-brand text-onbrand' : 'border-gray-200')}>{fmt(t)}</button>
+            ))}
+            {!slots.length && <span className="text-xs text-gray-500">{tr('No more slots today — try tomorrow.', 'لا مواعيد متبقية اليوم — جرّب الغد.')}</span>}
+          </div>
+        </>
+      )}
+    </div>
+  );
 }

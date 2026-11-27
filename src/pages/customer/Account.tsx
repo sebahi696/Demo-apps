@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Bell, Globe, Download, CalendarDays, Receipt, Trash2, ChevronRight, Pencil, Megaphone, Package, Gift, Info, Wallet, Heart, Users, Cake, Copy } from 'lucide-react';
 import { useDemo } from '../../lib/demo';
+import { CLIENT_MODE } from '../../lib/client';
 import { useStore, toast } from '../../lib/store';
 import { me, tierOf, applyReferral, simulateFriendJoin, setBirthday } from '../../lib/ops';
 import { timeAgo } from '../../lib/utils';
@@ -77,9 +78,9 @@ export function Account() {
               else { await navigator.clipboard?.writeText(text).catch(() => {}); toast(tr('Invite copied', 'تم نسخ الدعوة')); }
             }}><Copy size={18} /></button>
           </div>
-          <button className="mt-2 text-xs underline opacity-80" onClick={() => { let n = ''; update((d) => void (n = simulateFriendJoin(d))); toast(tr(`${n} joined with your code — +${cfg.loyalty.referralBonus} points`, `انضم ${n} برمزك — +${cfg.loyalty.referralBonus} نقطة`)); }}>
+          {!CLIENT_MODE && <button className="mt-2 text-xs underline opacity-80" onClick={() => { let n = ''; update((d) => void (n = simulateFriendJoin(d))); toast(tr(`${n} joined with your code — +${cfg.loyalty.referralBonus} points`, `انضم ${n} برمزك — +${cfg.loyalty.referralBonus} نقطة`)); }}>
             {tr('Demo: simulate a friend joining', 'تجربة: محاكاة انضمام صديق')}
-          </button>
+          </button>}
           {!c.referredBy && (
             <form className="mt-3 flex gap-2" onSubmit={(e) => {
               e.preventDefault();
@@ -107,14 +108,14 @@ export function Account() {
               toast(got ? tr('Happy birthday! 🎂 Your gift is in Rewards', 'عيد ميلاد سعيد! 🎂 هديتك في المكافآت') : tr('Saved', 'تم الحفظ'));
             }}>{tr('Save', 'حفظ')}</Button>
           </div>
-          <button className="mt-2 text-xs text-brand underline" onClick={() => {
+          {!CLIENT_MODE && <button className="mt-2 text-xs text-brand underline" onClick={() => {
             const now = new Date();
             const today = `${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
             setBday(today);
             let got = false;
             update((d) => void (got = setBirthday(d, today)));
             toast(got ? tr('Happy birthday! 🎂 Your gift is in Rewards', 'عيد ميلاد سعيد! 🎂 هديتك في المكافآت') : tr('Birthday gift already claimed this year', 'تم استلام هدية هذا العام'), got ? 'ok' : 'info');
-          }}>{tr('Demo: pretend today is my birthday', 'تجربة: اعتبر اليوم عيد ميلادي')}</button>
+          }}>{tr('Demo: pretend today is my birthday', 'تجربة: اعتبر اليوم عيد ميلادي')}</button>}
         </div>
       )}
 

@@ -1,8 +1,8 @@
 # Demo Studio — try-before-you-buy app machine
 
-A prospect answers a short questionnaire and gets a **working, branded app**: a customer PWA, a staff mode and an owner admin panel. They use it like it's theirs. Then you build the real, custom app.
+A restaurant, café, bakery or fast-food owner answers a short questionnaire and gets a **working, branded ordering app**: customer PWA, staff & kitchen screen, rider app and owner panel. They use it like it's theirs. When they sign, their demo is exported and built into their own app — see **[CLIENTS.md](CLIENTS.md)**.
 
-Industries: **Restaurant · Café · Retail** (Salon, Clinic, Gym shown as "coming soon").
+Business types (F&B only): **Restaurant & grill · Café · Bakery & desserts · Pizzeria & fast food**.
 Languages: **English + Arabic** (full RTL).
 Hosting: **GitHub Pages, free**. Business data stays in each visitor's browser. Only a lead summary goes to a small Supabase table, so sales can see every demo.
 
@@ -54,6 +54,9 @@ Sales console (#/sales)  —  share links (#/i/<config>) open a fresh copy on an
 * **Role switcher** (top bar): Customer / Staff (PIN `1234`) / Owner. One person can play every part.
 * **Guided tour** (checklist icon): 10 tasks covering every feature. What the client actually used shows up in **My app plan** and in the Sales console.
 * **Simulate store activity** (⋯ menu): orders move through the statuses by themselves.
+
+### New in v4.0 — F&B edition
+F&B only (retail removed; old retail demos open as restaurants) · new **bakery** and **pizzeria/fast-food** presets · **meal deals/combos** · **allergens**, calories, prep time, “order ahead” · option limits (“up to 3 toppings”) · **breakfast/time-limited categories** · **schedule orders** (today/tomorrow slots) · **Lebanese delivery areas** with per-area minimum order · **table service** (call waiter, ask for bill, water) · **kitchen display screen** with timers · **App design** page with live preview: light/dark theme, header style, menu layout (list / grid / big photos), card style, home sections order · **client template**: export a client package and `npm run build:client -- <slug>` builds their own PWA (no demo chrome, owner/staff/rider PIN gates), plus a GitHub Action and a Capacitor config for the native app.
 
 ### New in v3.0
 **Rider app** (4th role): deliveries, navigate/call, collect cash on delivery, mark delivered · **dispatch** from the counter with a suggested rider · **live tracking map** for the customer · **Riders & cash** page: cash each rider holds, end-of-shift count with shortfall recorded per rider · **order chime** repeats every 20 s until accepted · **sold out per branch** in one tap · **lira/dollar** prices at the owner's rate + change calculator · **automatic audiences** (regulars, went quiet, new, birthdays) with offer codes and **results per campaign** (uses, sales, cost) · **lost orders with reasons** · weekly **heatmap** · **daily close** to WhatsApp · **Instagram order link** · landing **commission calculator** and **two launch options** (native app vs PWA, prices in `platform.config.ts`).

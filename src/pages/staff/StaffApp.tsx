@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { NavLink, Route, Routes } from 'react-router-dom';
-import { ClipboardList, QrCode, ScanLine, CalendarDays, Truck, Store, UtensilsCrossed, Banknote, Check, X, RefreshCw, Smartphone, Search, Printer, PauseCircle, Bike, Volume2, VolumeX, Ban, Calculator } from 'lucide-react';
+import { ChefHat, HandPlatter, ClipboardList, QrCode, ScanLine, CalendarDays, Truck, Store, UtensilsCrossed, Banknote, Check, X, RefreshCw, Smartphone, Search, Printer, PauseCircle, Bike, Volume2, VolumeX, Ban, Calculator } from 'lucide-react';
 import { useDemo } from '../../lib/demo';
+import { CLIENT_MODE } from '../../lib/client';
 import { toast } from '../../lib/store';
 import { assignRider, suggestRider, riderActive, rejectOrder, LOST_REASONS, dualPrice, productAvailable, addLedger, claimToken, claimUrl, findVoucher, makeToken, nextStatus, parseScan, pointsFor, setOrderStatus, setReservationStatus, statusLabel, statusTone, useVoucher } from '../../lib/ops';
 import type { Order, OrderStatus, LostReason } from '../../lib/types';
@@ -15,7 +16,8 @@ export default function StaffApp() {
   const loyalty = cfg.modules.loyaltyPoints || cfg.modules.loyaltyStamps;
   const pending = data.orders.filter((o) => o.status === 'pending').length;
   const tabs = [
-    cfg.modules.ordering && { to: '', end: true, icon: <ClipboardList size={18} />, label: tr('Orders', 'الطلبات'), badge: pending },
+    cfg.modules.ordering && { to: '', end: true, icon: <ClipboardList size={18} />, label: tr('Orders', 'الطلبات'), badge: pending + data.serviceRequests.filter((r) => !r.done).length },
+    cfg.modules.ordering && { to: 'kitchen', icon: <ChefHat size={18} />, label: tr('Kitchen screen', 'شاشة المطبخ') },
     loyalty && { to: 'award', icon: <QrCode size={18} />, label: tr('Award points', 'منح النقاط') },
     loyalty && { to: 'scan', icon: <ScanLine size={18} />, label: tr('Scan voucher', 'مسح قسيمة') },
     cfg.modules.reservations && { to: 'bookings', icon: <CalendarDays size={18} />, label: tr('Bookings', 'الحجوزات') },
@@ -46,6 +48,7 @@ export default function StaffApp() {
             <Route path="scan" element={<ScanVoucher />} />
             <Route path="bookings" element={<Bookings />} />
             <Route path="menu" element={<SoldOut />} />
+            <Route path="kitchen" element={<Kitchen />} />
           </Routes>
         </div>
       </div>
@@ -71,7 +74,7 @@ function beep() {
 }
 
 function Board() {
-  const { data, tr } = useDemo();
+  const { data, tr, lang } = useDemo();
   const [tab, setTab] = useState<'new' | 'progress' | 'ready' | 'done'>('new');
   const today = ymd(new Date());
   const cols = useMemo(() => ({
@@ -119,6 +122,17 @@ function Board() {
           </button>
         ))}
       </div>
+      {data.serviceRequests.some((r) => !r.done) && (
+        <div className="mb-3 flex flex-wrap gap-2">
+          {data.serviceRequests.filter((r) => !r.done).map((r) => (
+            <button key={r.id} onClick={() => update((d) => void (d.data.serviceRequests.find((x) => x.id === r.id)!.done = true))}
+              className="inline-flex items-center gap-2 rounded-full bg-indigo-600 text-white px-3.5 py-2 text-sm font-semibold animate-[up_.2s_ease] shadow">
+              <HandPlatter size={15} /> {tr(`Table ${r.table}`, `طاولة ${r.table}`)} · {{ waiter: tr('needs a waiter', 'يطلب النادل'), bill: tr('wants the bill', 'يطلب الحساب'), water: tr('wants water', 'يطلب ماء'), cutlery: tr('needs cutlery', 'يطلب أدوات') }[r.kind]} · {timeAgo(r.at, lang)}
+              <span className="ms-1 rounded-full bg-white/20 px-2 py-0.5 text-xs">{tr('Done', 'تم')}</span>
+            </button>
+          ))}
+        </div>
+      )}
       <Segmented className="lg:hidden mb-3" value={tab} onChange={setTab} options={keys.map((k) => ({ value: k, label: <span>{titles[k]} <span className="opacity-60">{cols[k].length}</span></span> }))} />
       <div className="grid lg:grid-cols-4 gap-4">
         {keys.map((k) => (
@@ -155,9 +169,9 @@ export function OrderTicket({ o, compact }: { o: Order; compact?: boolean }) {
   const isMe = o.customerId === data.meId;
   const actionLabel: Partial<Record<OrderStatus, string>> = {
     accepted: tr('Accept', 'قبول'),
-    preparing: cfg.industry === 'retail' ? tr('Start packing', 'ابدأ التجهيز') : tr('Start preparing', 'ابدأ التحضير'),
+    preparing: tr('Start preparing', 'ابدأ التحضير'),
     ready: tr('Mark ready', 'جاهز'),
-    outForDelivery: cfg.industry === 'retail' ? tr('Mark shipped', 'تم الشحن') : tr('Out for delivery', 'خرج للتوصيل'),
+    outForDelivery: tr('Out for delivery', 'خرج للتوصيل'),
     completed: o.fulfillment === 'delivery' ? tr('Delivered', 'تم التسليم') : tr('Complete', 'إتمام'),
   };
   const fIcon = { delivery: <Truck size={14} />, pickup: <Store size={14} />, dineIn: <UtensilsCrossed size={14} /> }[o.fulfillment];
@@ -183,6 +197,7 @@ export function OrderTicket({ o, compact }: { o: Order; compact?: boolean }) {
           ))}
         </ul>
       )}
+      {o.scheduledFor && <div className="mt-2 text-xs bg-indigo-50 text-indigo-900 rounded-lg px-2 py-1.5 font-semibold">🗓️ {tr('Scheduled for', 'مجدول لـ')} {fmtDate(o.scheduledFor, lang, { weekday: 'short', hour: 'numeric', minute: '2-digit' })}</div>}
       {o.note && <div className="mt-2 text-xs bg-amber-50 text-amber-900 rounded-lg px-2 py-1.5">📝 {o.note}</div>}
       {o.address && !compact && <div className="mt-1.5 text-xs text-gray-500">📍 {o.address}</div>}
       <div className="flex items-center justify-between mt-3">
@@ -360,12 +375,12 @@ function AwardPoints() {
             <div className="h-1.5 bg-gray-100 rounded-full mt-3 overflow-hidden"><div className="h-full bg-brand transition-all" style={{ width: `${(left / TTL) * 100}%` }} /></div>
             <div className="grid grid-cols-2 gap-2 mt-4">
               <Button variant="outline" icon={<RefreshCw size={16} />} onClick={generate}>{tr('New code', 'رمز جديد')}</Button>
-              <Button icon={<Smartphone size={16} />} disabled={left === 0} onClick={() => {
+              {!CLIENT_MODE && <Button icon={<Smartphone size={16} />} disabled={left === 0} onClick={() => {
                 let res: ReturnType<typeof claimToken> = { ok: false };
                 update((d) => void (res = claimToken(d, token)));
                 if (res.ok) { toast(tr(`Demo customer received ${res.points} points ✨`, `حصل زبون التجربة على ${res.points} نقطة ✨`)); setToken(null); setAmount(''); }
                 else toast(tl(res.error), 'error');
-              }}>{tr('Simulate customer scan', 'محاكاة مسح الزبون')}</Button>
+              }}>{tr('Simulate customer scan', 'محاكاة مسح الزبون')}</Button>}
             </div>
           </Card>
         ) : (
@@ -421,7 +436,7 @@ function ScanVoucher() {
               else toast(tr('That is not a voucher code', 'هذا ليس رمز قسيمة'), 'error');
             }} placeholder="RW-XXXXX" />
           </Card>
-          {active.length > 0 && (
+          {active.length > 0 && !CLIENT_MODE && (
             <Card className="p-4 mt-4">
               <div className="text-sm font-semibold text-gray-600 mb-2">{tr('Active vouchers (demo shortcut)', 'قسائم فعّالة (اختصار التجربة)')}</div>
               <div className="flex flex-wrap gap-2">
@@ -488,6 +503,60 @@ export function Bookings() {
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+/** Kitchen display: big tickets with a running timer, colour-coded when late. */
+function Kitchen() {
+  const { data, cfg, tr, tl, update, lang } = useDemo();
+  const [, tick] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => tick((x) => x + 1), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const target = cfg.fulfillment.prepMinutes + cfg.business.busyExtraMinutes;
+  const list = data.orders.filter((o) => o.status === 'accepted' || o.status === 'preparing').sort((a, b) => a.createdAt - b.createdAt);
+  return (
+    <div className="-m-3 sm:-m-5 min-h-[calc(100vh-110px)] bg-gray-950 p-3 sm:p-5">
+      <div className="flex items-center justify-between text-white mb-4">
+        <div className="font-bold text-lg flex items-center gap-2"><ChefHat size={20} /> {tr('Kitchen screen', 'شاشة المطبخ')}</div>
+        <div className="text-sm text-white/60">{tr(`Target ${target} min · ${list.length} in progress`, `الهدف ${target} د · ${list.length} قيد التحضير`)}</div>
+      </div>
+      {!list.length && <div className="text-center text-white/40 py-24 text-lg">{tr('All caught up 👨‍🍳', 'لا طلبات حالياً 👨‍🍳')}</div>}
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {list.map((o) => {
+          const mins = Math.floor((Date.now() - o.createdAt) / 60000);
+          const secs = Math.floor((Date.now() - o.createdAt) / 1000) % 60;
+          const late = mins >= target;
+          const warn = mins >= target * 0.7;
+          return (
+            <div key={o.id} className={cx('rounded-2xl overflow-hidden bg-white flex flex-col', late && 'ring-4 ring-rose-500')}>
+              <div className={cx('px-4 py-2.5 flex items-center justify-between text-white', late ? 'bg-rose-600' : warn ? 'bg-amber-500' : 'bg-emerald-600')}>
+                <span className="font-extrabold text-xl">#{o.number}</span>
+                <span className="font-mono font-bold text-lg tabular-nums">{String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}</span>
+              </div>
+              <div className="px-4 py-1.5 text-xs font-semibold text-gray-500 border-b">
+                {o.fulfillment === 'dineIn' ? `🍽️ ${tr('Table', 'طاولة')} ${o.table}` : o.fulfillment === 'delivery' ? `🛵 ${tr('Delivery', 'توصيل')}` : `🛍️ ${tr('Pickup', 'استلام')}`} · {o.customerName}
+                {o.scheduledFor && <span className="ms-1 text-indigo-700">· 🗓️ {fmtDate(o.scheduledFor, lang, { hour: 'numeric', minute: '2-digit' })}</span>}
+              </div>
+              <ul className="px-4 py-3 space-y-2 flex-1">
+                {o.items.map((i, k) => (
+                  <li key={k}>
+                    <div className="text-lg font-bold leading-tight"><span className="text-brand">{i.qty}×</span> {tl(i.name)}</div>
+                    {i.options.length > 0 && <div className="text-sm text-gray-600">{i.options.map((x) => tl(x)).join(' · ')}</div>}
+                  </li>
+                ))}
+                {o.note && <li className="text-sm bg-amber-50 text-amber-900 rounded-lg px-2 py-1.5">📝 {o.note}</li>}
+              </ul>
+              <button onClick={() => update((d) => setOrderStatus(d, o.id, o.status === 'accepted' ? 'preparing' : 'ready'))}
+                className={cx('py-3.5 font-bold text-white', o.status === 'accepted' ? 'bg-gray-900' : 'bg-emerald-600')}>
+                {o.status === 'accepted' ? tr('Start', 'ابدأ') : tr('Ready ✓', 'جاهز ✓')}
+              </button>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

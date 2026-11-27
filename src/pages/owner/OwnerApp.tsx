@@ -2,7 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { NavLink, Route, Routes, Link } from 'react-router-dom';
 import {
   LayoutDashboard, Receipt, Package, Users, Gift, Tag, Megaphone, CalendarDays, Palette, Settings as SettingsIcon, UserCog, FileText,
-  TrendingUp, ShoppingCart, Wallet, Star, Download, Search, Plus, Minus, MessageSquareHeart, CreditCard, Bike, XCircle,
+  TrendingUp, ShoppingCart, Wallet, Star, Download, Search, Plus, Minus, MessageSquareHeart, CreditCard, Bike, XCircle, Paintbrush,
 } from 'lucide-react';
 import { useDemo } from '../../lib/demo';
 import { toast } from '../../lib/store';
@@ -16,6 +16,7 @@ import { Loyalty, Deals, Campaigns } from './Marketing';
 import { Branding, Settings, Staff, OwnerReservations, Plan } from './Settings';
 import { Reviews, WalletAdmin } from './Extras';
 import { Riders, DailyClose } from './Riders';
+import Design from './Design';
 
 export default function OwnerApp() {
   const { cfg, tr, tl, terms } = useDemo();
@@ -33,6 +34,7 @@ export default function OwnerApp() {
     { to: 'wallet', icon: <CreditCard size={18} />, label: tr('Wallet & gifts', 'المحفظة والهدايا'), show: mod.wallet },
     { to: 'reservations', icon: <CalendarDays size={18} />, label: tr('Bookings', 'الحجوزات'), show: mod.reservations },
     { to: 'branding', icon: <Palette size={18} />, label: tr('Branding', 'الهوية') },
+    { to: 'design', icon: <Paintbrush size={18} />, label: tr('App design', 'تصميم التطبيق') },
     { to: 'staff', icon: <UserCog size={18} />, label: tr('Staff', 'الموظفون') },
     { to: 'settings', icon: <SettingsIcon size={18} />, label: tr('Settings', 'الإعدادات') },
     { to: 'plan', icon: <FileText size={18} />, label: tr('My app plan', 'خطة تطبيقي') },
@@ -72,6 +74,7 @@ export default function OwnerApp() {
             <Route path="reservations" element={<OwnerReservations />} />
             <Route path="reviews" element={<Reviews />} />
             <Route path="riders" element={<Riders />} />
+            <Route path="design" element={<Design />} />
             <Route path="wallet" element={<WalletAdmin />} />
             <Route path="branding" element={<Branding />} />
             <Route path="staff" element={<Staff />} />

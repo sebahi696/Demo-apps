@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Upload, Plus, Trash2, RotateCcw } from 'lucide-react';
+import { Upload, Plus, Trash2, RotateCcw, PackageOpen } from 'lucide-react';
+import { CLIENT_MODE, downloadPackage } from '../../lib/client';
 import { useDemo } from '../../lib/demo';
 import { toast } from '../../lib/store';
 import { tourDone, track } from '../../lib/ops';
@@ -114,7 +115,7 @@ export function Settings() {
   const { cfg, tr, tl, update, terms } = useDemo();
   const set = (fn: (d: Demo) => void) => update((d) => { fn(d); track(d, 'editSettings'); });
   const f = cfg.fulfillment;
-  const modules: ModuleKey[] = ['ordering', 'delivery', 'pickup', ...(cfg.industry !== 'retail' ? ['dineIn' as const, 'tableQr' as const] : []), 'tips', 'wallet', 'loyaltyPoints', 'loyaltyStamps', 'vipTiers', 'staticQr', 'referrals', 'deals', 'campaigns', 'reviews', 'reservations'];
+  const modules: ModuleKey[] = ['ordering', 'delivery', 'pickup', 'dineIn', 'tableQr', 'tips', 'wallet', 'loyaltyPoints', 'loyaltyStamps', 'vipTiers', 'staticQr', 'referrals', 'deals', 'campaigns', 'reviews', 'reservations'];
   return (
     <>
       <PageHead title={tr('Settings', 'الإعدادات')} />
@@ -168,10 +169,11 @@ export function Settings() {
                     <Input value={z.name.en} onChange={(e) => set((d) => void (d.config.fulfillment.zones[i].name.en = e.target.value))} className="!h-9" />
                     <Input type="number" step="0.5" value={z.fee} onChange={(e) => set((d) => void (d.config.fulfillment.zones[i].fee = Math.max(0, +e.target.value)))} className="!h-9 !w-20" title="fee" />
                     <Input type="number" value={z.eta} onChange={(e) => set((d) => void (d.config.fulfillment.zones[i].eta = Math.max(0, +e.target.value)))} className="!h-9 !w-20" title="minutes" />
+                    <Input type="number" value={z.minOrder ?? ''} placeholder={tr('min', 'أدنى')} onChange={(e) => set((d) => void (d.config.fulfillment.zones[i].minOrder = e.target.value ? Math.max(0, +e.target.value) : undefined))} className="!h-9 !w-20" title="minimum order" />
                     <button className="text-rose-600" onClick={() => set((d) => void (d.config.fulfillment.zones = d.config.fulfillment.zones.filter((x) => x.id !== z.id)))}><Trash2 size={16} /></button>
                   </div>
                 ))}
-                <div className="text-xs text-gray-500">{tr('Zone name · fee · minutes', 'اسم المنطقة · الرسوم · الدقائق')}</div>
+                <div className="text-xs text-gray-500">{tr('Area name · fee · minutes · minimum order (optional)', 'اسم المنطقة · الرسوم · الدقائق · الحد الأدنى (اختياري)')}</div>
                 <Button size="sm" variant="outline" icon={<Plus size={14} />} onClick={() => set((d) => void d.config.fulfillment.zones.push({ id: 'z' + uid(), name: { en: 'New zone', ar: 'منطقة جديدة' }, fee: 2, eta: 30 }))}>{tr('Add zone', 'إضافة منطقة')}</Button>
               </div>
             </div>
@@ -263,7 +265,8 @@ export function Plan() {
   const { demo, tr } = useDemo();
   return (
     <>
-      <PageHead title={tr('My app plan', 'خطة تطبيقي')} sub={tr('A summary of what you chose and tried — we use it to build your final app.', 'ملخص لما اخترته وجرّبته — نستخدمه لبناء تطبيقك النهائي.')} />
+      <PageHead title={tr('My app plan', 'خطة تطبيقي')} sub={tr('A summary of what you chose and tried — we use it to build your final app.', 'ملخص لما اخترته وجرّبته — نستخدمه لبناء تطبيقك النهائي.')}
+        action={!CLIENT_MODE && <Button variant="outline" icon={<PackageOpen size={16} />} onClick={() => { const s = downloadPackage(demo); toast(tr(`Saved ${s}.json — put it in the clients/ folder`, `تم حفظ ${s}.json — ضعه في مجلد clients`)); }}>{tr('Export client package', 'تصدير حزمة العميل')}</Button>} />
       <PlanSummary demo={demo} />
     </>
   );

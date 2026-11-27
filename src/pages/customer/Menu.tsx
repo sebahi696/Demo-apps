@@ -1,16 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search, Plus, Check, Heart, BellRing } from 'lucide-react';
+import { Search, Plus, Check, Heart, BellRing, Clock, Flame } from 'lucide-react';
 import { useDemo } from '../../lib/demo';
 import { toast } from '../../lib/store';
-import { addToCart, productAvailable, toggleFavorite, toggleStockAlert } from '../../lib/ops';
-import { TAGS } from '../../lib/presets';
+import { addToCart, productAvailable, toggleFavorite, toggleStockAlert, categoryOpen } from '../../lib/ops';
+import { TAGS, ALLERGENS } from '../../lib/presets';
 import type { Product } from '../../lib/types';
 import { Button, Modal, Stepper, Thumb, Badge, cx, Input } from '../../components/ui';
 import { Screen } from './CustomerApp';
 
 export default function Menu() {
-  const { data, tr, tl, terms, m, lang } = useDemo();
+  const { data, tr, tl, terms, m, lang, cfg } = useDemo();
+  const layout = cfg.ui.menuLayout;
   const [params, setParams] = useSearchParams();
   const [q, setQ] = useState('');
   const [filter, setFilter] = useState<string | null>(params.get('fav') ? 'fav' : null);
@@ -35,6 +36,19 @@ export default function Menu() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Highlight the category you are scrolling through
+  useEffect(() => {
+    const els = data.categories.map((c) => document.getElementById('cat-' + c.id)).filter(Boolean) as HTMLElement[];
+    const root = els[0]?.closest('.overflow-y-auto') as HTMLElement | null;
+    if (!root) return;
+    const io = new IntersectionObserver((ents) => {
+      const vis = ents.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+      if (vis) setActiveCat(vis.target.id.slice(4));
+    }, { root, rootMargin: '-140px 0px -60% 0px' });
+    els.forEach((e) => io.observe(e));
+    return () => io.disconnect();
+  }, [data.categories, visible.length]);
 
   const jump = (id: string) => {
     setActiveCat(id);
@@ -77,11 +91,14 @@ export default function Menu() {
           if (!items.length) return null;
           return (
             <section key={c.id} id={'cat-' + c.id} className="pt-4">
-              <h2 className="font-display font-bold text-lg mb-2">{c.emoji} {tl(c.name)}</h2>
-              <div className="space-y-2.5">
-                {items.map((p) => (
-                  <ProductRow key={p.id} p={p} onOpen={() => setParams({ product: p.id })} />
-                ))}
+              <div className="flex items-baseline gap-2 mb-2">
+                <h2 className="font-display font-bold text-lg">{c.emoji} {tl(c.name)}</h2>
+                {c.availableFrom && <span className={cx('text-[11px] font-semibold rounded-full px-2 py-0.5', categoryOpen(c) ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700')}><Clock size={10} className="inline -mt-0.5" /> {c.availableFrom}–{c.availableTo}</span>}
+              </div>
+              <div className={cx(layout === 'grid' ? 'grid grid-cols-2 gap-3' : 'space-y-2.5', !categoryOpen(c) && 'opacity-60')}>
+                {items.map((p) => layout === 'list'
+                  ? <ProductRow key={p.id} p={p} onOpen={() => setParams({ product: p.id })} />
+                  : <ProductCard key={p.id} p={p} large={layout === 'large'} onOpen={() => setParams({ product: p.id })} />)}
               </div>
             </section>
           );
@@ -90,6 +107,35 @@ export default function Menu() {
       </div>
       {open && <ProductSheet key={open.id + lang} p={open} onClose={() => { params.delete('product'); setParams(params, { replace: true }); }} />}
     </Screen>
+  );
+}
+
+function ProductCard({ p, onOpen, large }: { p: Product; onOpen: () => void; large?: boolean }) {
+  const { tl, m, m2, tr, data, branchId } = useDemo();
+  const ok = productAvailable(p, branchId);
+  const sale = p.compareAt && p.compareAt > p.price;
+  return (
+    <button onClick={onOpen} className={cx('w-full rounded-app bg-white border border-gray-100 shadow-sm text-start overflow-hidden active:scale-[.98] transition', !ok && 'opacity-60')}>
+      <div className="relative">
+        <Thumb emoji={p.emoji} image={p.image} bg={p.bg} size="xl" className={cx('!rounded-none', large ? '!h-44 !text-[84px]' : '!h-28 !text-5xl')} />
+        {sale && <span className="absolute top-2 start-2 rounded-full bg-rose-600 text-white text-[10px] font-bold px-2 py-0.5">-{Math.round((1 - p.price / p.compareAt!) * 100)}%</span>}
+        {p.isNew && <span className="absolute top-2 end-2 rounded-full bg-brand2 text-onbrand2 text-[10px] font-bold px-2 py-0.5">{tr('New', 'جديد')}</span>}
+        {data.favorites.includes(p.id) && <Heart size={16} className="absolute bottom-2 end-2 fill-rose-500 text-rose-500" />}
+        {!ok && <span className="absolute inset-0 grid place-items-center bg-white/60 font-bold text-rose-600 text-sm">{tr('Sold out', 'نفدت الكمية')}</span>}
+      </div>
+      <div className={cx(large ? 'p-3.5' : 'p-2.5')}>
+        <div className={cx('font-semibold leading-tight', large ? 'text-base' : 'text-sm line-clamp-1')}>{tl(p.name)}</div>
+        {large && <div className="text-xs text-gray-500 line-clamp-2 mt-1">{tl(p.desc)}</div>}
+        <div className="flex items-end justify-between mt-2">
+          <div>
+            <span className="font-bold text-sm">{m(p.price)}</span>
+            {sale && <span className="ms-1 text-xs text-gray-400 line-through">{m(p.compareAt!)}</span>}
+            {m2(p.price) && <div className="text-[10px] text-gray-400">{m2(p.price)}</div>}
+          </div>
+          {ok && <span className="h-8 w-8 rounded-full bg-brand text-onbrand grid place-items-center shadow"><Plus size={18} /></span>}
+        </div>
+      </div>
+    </button>
   );
 }
 
@@ -121,7 +167,7 @@ function ProductRow({ p, onOpen }: { p: Product; onOpen: () => void }) {
 }
 
 export function ProductSheet({ p, onClose }: { p: Product; onClose: () => void }) {
-  const { tl, tr, m, m2, update, data, branchId } = useDemo();
+  const { tl, tr, m, m2, update, data, branchId, cfg } = useDemo();
   const fav = data.favorites.includes(p.id);
   const alert = data.stockAlerts.includes(p.id);
   const [qty, setQty] = useState(1);
@@ -133,6 +179,8 @@ export function ProductSheet({ p, onClose }: { p: Product; onClose: () => void }
   const optionIds = Object.values(sel).flat();
   const unit = p.price + p.groups.flatMap((g) => g.options).filter((o) => optionIds.includes(o.id)).reduce((s, o) => s + o.priceDelta, 0);
   const missing = p.groups.filter((g) => g.required && !sel[g.id]?.length);
+  const cat = data.categories.find((c) => c.id === p.categoryId);
+  const catOpen = categoryOpen(cat);
 
   const add = () => {
     if (missing.length) return toast(tr(`Please choose: ${tl(missing[0].name)}`, `يرجى اختيار: ${tl(missing[0].name)}`), 'error');
@@ -176,11 +224,19 @@ export function ProductSheet({ p, onClose }: { p: Product; onClose: () => void }
       {p.tags?.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mt-2">{p.tags.map((t) => TAGS[t] && <Badge key={t}>{TAGS[t].icon} {tl(TAGS[t])}</Badge>)}</div>
       )}
-      {p.stock !== null && p.stock > 0 && p.stock <= 5 && <div className="mt-2 text-sm font-semibold text-amber-600">{tr(`Only ${p.stock} left`, `بقي ${p.stock} فقط`)}</div>}
+      {p.stock !== null && p.stock > 0 && p.stock <= 5 && <div className="mt-2 text-sm font-semibold text-amber-600">{tr(`Only ${p.stock} left today`, `بقي ${p.stock} فقط اليوم`)}</div>}
+      {(p.calories || p.prepMinutes || p.allergens?.length) ? (
+        <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
+          {p.calories && cfg.ui.showCalories && <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-1 font-medium"><Flame size={12} /> {p.calories} kcal</span>}
+          {p.prepMinutes && <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-1 font-medium"><Clock size={12} /> {p.prepMinutes >= 60 ? tr(`Order ${Math.round(p.prepMinutes / 60)}h ahead`, `اطلب قبل ${Math.round(p.prepMinutes / 60)} ساعة`) : tr(`~${p.prepMinutes} min`, `~${p.prepMinutes} د`)}</span>}
+          {p.allergens?.length ? <span className="rounded-full bg-amber-50 text-amber-900 px-2 py-1 font-medium">{tr('Contains', 'يحتوي على')}: {p.allergens.map((a) => ALLERGENS[a] ? `${ALLERGENS[a].icon} ${tl(ALLERGENS[a])}` : a).join(' · ')}</span> : null}
+        </div>
+      ) : null}
+      {!catOpen && cat && <div className="mt-3 rounded-lg bg-amber-50 text-amber-900 text-sm p-2.5">⏰ {tr(`${tl(cat.name)} is served ${cat.availableFrom}–${cat.availableTo}. You can still pre-order for tomorrow at checkout.`, `يُقدَّم ${tl(cat.name)} من ${cat.availableFrom} إلى ${cat.availableTo}. يمكنك الطلب المسبق لليوم التالي عند الدفع.`)}</div>}
       {p.groups.map((g) => (
         <div key={g.id} className="mt-5">
           <div className="flex items-center justify-between mb-2">
-            <div className="font-bold">{tl(g.name)}</div>
+            <div className="font-bold">{tl(g.name)}{g.multi && g.max ? <span className="ms-1.5 text-xs font-medium text-gray-500">{tr(`up to ${g.max}`, `حتى ${g.max}`)}</span> : null}</div>
             <span className={cx('text-xs rounded-full px-2 py-0.5 font-semibold', g.required ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600')}>
               {g.required ? tr('Required', 'إلزامي') : tr('Optional', 'اختياري')}
             </span>
@@ -189,7 +245,10 @@ export function ProductSheet({ p, onClose }: { p: Product; onClose: () => void }
             {g.options.map((o) => {
               const on = sel[g.id]?.includes(o.id);
               return (
-                <button key={o.id} type="button" onClick={() => setSel((s) => ({ ...s, [g.id]: g.multi ? (on ? s[g.id].filter((x) => x !== o.id) : [...s[g.id], o.id]) : on && !g.required ? [] : [o.id] }))}
+                <button key={o.id} type="button" onClick={() => {
+                  if (g.multi && !on && g.max && (sel[g.id]?.length ?? 0) >= g.max) return toast(tr(`Pick up to ${g.max}`, `اختر حتى ${g.max}`), 'info');
+                  setSel((s) => ({ ...s, [g.id]: g.multi ? (on ? s[g.id].filter((x) => x !== o.id) : [...s[g.id], o.id]) : on && !g.required ? [] : [o.id] }));
+                }}
                   className={cx('w-full flex items-center gap-3 rounded-app border px-3 py-2.5 text-start transition', on ? 'border-brand bg-brand/5' : 'border-gray-200')}>
                   <span className={cx('h-5 w-5 grid place-items-center shrink-0', g.multi ? 'rounded-md' : 'rounded-full', on ? 'bg-brand text-onbrand' : 'border-2 border-gray-300')}>{on && <Check size={13} />}</span>
                   <span className="flex-1">{tl(o.name)}</span>

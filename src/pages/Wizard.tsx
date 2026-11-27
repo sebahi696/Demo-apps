@@ -5,7 +5,7 @@ import { useStore } from '../lib/store';
 import { useI18n } from '../lib/i18n';
 import { PRESETS, COMING_SOON, COUNTRIES, CURRENCIES } from '../lib/presets';
 import { PALETTES } from '../lib/theme';
-import { buildDemo, defaultAnswers, type WizardAnswers } from '../lib/seed';
+import { buildDemo, defaultAnswers, defaultUi, type WizardAnswers } from '../lib/seed';
 import { resizeImage } from '../lib/utils';
 import type { Industry, ModuleKey, PaymentKey } from '../lib/types';
 import { PLATFORM } from '../platform.config';
@@ -104,7 +104,7 @@ export default function Wizard() {
             <div>
               <h1 className="text-2xl font-extrabold">{tr('What kind of business is it?', 'ما نوع عملك؟')}</h1>
               <p className="text-gray-500 mt-1">{tr('We will set up the right features and sample data.', 'سنجهّز الميزات المناسبة وبيانات تجريبية.')}</p>
-              <div className="mt-6 grid sm:grid-cols-3 gap-4">
+              <div className="mt-6 grid sm:grid-cols-2 gap-4">
                 {Object.values(PRESETS).map((p) => (
                   <button key={p.industry} onClick={() => pickIndustry(p.industry)}
                     className={cx('rounded-3xl border-2 bg-white p-5 text-start transition hover:shadow-lg', a.industry === p.industry ? 'border-gray-900' : 'border-transparent')}>
@@ -207,6 +207,28 @@ export default function Wizard() {
                 </div>
               </div>
               <div>
+                <Label>{tr('Menu style', 'شكل القائمة')}</Label>
+                <div className="grid grid-cols-3 gap-3">
+                  {([['list', tr('List', 'قائمة'), '☰'], ['grid', tr('Grid', 'شبكة'), '▦'], ['large', tr('Big photos', 'صور كبيرة'), '▭']] as const).map(([k, l, icon]) => (
+                    <Choice key={k} on={(a.ui?.menuLayout ?? defaultUi(a.industry).menuLayout) === k} onClick={() => setA((x) => ({ ...x, ui: { ...(x.ui ?? {}), menuLayout: k } }))}>
+                      <div className="text-2xl">{icon}</div>
+                      <div className="text-sm text-gray-500 mt-1">{l}</div>
+                    </Choice>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <Label>{tr('Theme', 'المظهر')}</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  {([['light', tr('Light', 'فاتح')], ['dark', tr('Dark', 'داكن')]] as const).map(([k, l]) => (
+                    <Choice key={k} on={(a.ui?.theme ?? 'light') === k} onClick={() => setA((x) => ({ ...x, ui: { ...(x.ui ?? {}), theme: k } }))}>
+                      <div className={cx('h-8 rounded-lg mx-auto w-20', k === 'dark' ? 'bg-gray-900' : 'bg-gray-100 border')} />
+                      <div className="text-sm text-gray-500 mt-1">{l}</div>
+                    </Choice>
+                  ))}
+                </div>
+              </div>
+              <div>
                 <Label>{tr('Font style', 'نمط الخط')}</Label>
                 <div className="grid grid-cols-3 gap-3">
                   {([
@@ -242,7 +264,7 @@ export default function Wizard() {
                 ['ordering', tr('Online ordering & cart', 'الطلب أونلاين وسلة التسوق'), tr('Customers browse and order from the app', 'الزبائن يتصفحون ويطلبون من التطبيق')],
                 ['delivery', tl(pr.terms.delivery), tr('Zones, fees, minimum order, tracking', 'مناطق، رسوم، حد أدنى، تتبع الطلب')],
                 ['pickup', tr('Pickup / click & collect', 'الاستلام من المتجر'), tr('Order ahead, skip the line', 'اطلب مسبقاً وتجاوز الطابور')],
-                ...(a.industry !== 'retail' ? [
+                ...(true ? [
                   ['dineIn', tr('Dine-in ordering', 'الطلب داخل المطعم'), tr('Guests order from their table', 'يطلب الضيوف من طاولتهم')] as [ModuleKey, string, string],
                   ['tableQr', tr('Table QR codes', 'رموز QR للطاولات'), tr('Print a QR per table: scan, order, pay', 'رمز QR لكل طاولة: امسح، اطلب، ادفع')] as [ModuleKey, string, string],
                   ['tips', tr('Tips at checkout', 'الإكرامية عند الدفع'), tr('Customers can tip the team or driver', 'يمكن للزبائن منح إكرامية للفريق أو السائق')] as [ModuleKey, string, string],

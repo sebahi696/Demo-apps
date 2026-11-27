@@ -34,3 +34,22 @@ button { -webkit-tap-highlight-color: transparent; }
   .no-print { display: none !important; }
   body { background: white; }
 }
+
+/* ── Customer app themes (Owner → App design) ───────────────── */
+.cards-outlined .rounded-app.bg-white, .cards-outlined .rounded-app-lg.bg-white { box-shadow: none !important; border: 1.5px solid #e5e7eb !important; }
+.cards-flat .rounded-app.bg-white, .cards-flat .rounded-app-lg.bg-white { box-shadow: none !important; border-color: transparent !important; background: #f1f1f3 !important; }
+.cards-elevated .rounded-app.bg-white { box-shadow: 0 1px 2px rgb(0 0 0 / .04), 0 4px 14px -6px rgb(0 0 0 / .08); }
+
+.app-dark { color-scheme: dark; background: #0d0d10 !important; color: #f4f4f5; }
+.app-dark .bg-gray-50, .app-dark .bg-gray-50\/95 { background-color: #0d0d10 !important; }
+.app-dark .bg-white, .app-dark .bg-white\/90 { background-color: #18181c !important; }
+.app-dark .bg-gray-100 { background-color: #232329 !important; }
+.app-dark .border-gray-100, .app-dark .border-gray-200, .app-dark .divide-gray-100 > * { border-color: #2a2a31 !important; }
+.app-dark .text-gray-900, .app-dark .text-gray-800, .app-dark .text-gray-700 { color: #f4f4f5 !important; }
+.app-dark .text-gray-600, .app-dark .text-gray-500 { color: #a1a1aa !important; }
+.app-dark .text-gray-400 { color: #71717a !important; }
+.app-dark input, .app-dark textarea, .app-dark select { background-color: #232329 !important; color: #f4f4f5; border-color: #33333b !important; }
+.app-dark .cards-flat .rounded-app.bg-white, .app-dark.cards-flat .rounded-app.bg-white { background: #1f1f24 !important; }
+.app-dark.cards-outlined .rounded-app.bg-white { border-color: #33333b !important; }
+.app-dark .bg-amber-50 { background-color: #2a2312 !important; }
+.app-dark .text-amber-900 { color: #fcd34d !important; }

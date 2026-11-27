@@ -1,6 +1,6 @@
 // Builds a complete, realistic demo (config + data) from questionnaire answers.
-import type { Customer, Demo, DemoConfig, DemoData, Fulfillment, Industry, Lang, Order, PaymentKey, Reservation } from './types';
-import { DEFAULT_TIERS, PRESETS, COUNTRIES, BRANCH_NAMES } from './presets';
+import type { AppUi, Customer, Demo, DemoConfig, DemoData, Fulfillment, Industry, Lang, Order, PaymentKey, Reservation } from './types';
+import { DEFAULT_TIERS, PRESETS, COUNTRIES, BRANCH_NAMES, LEBANON_ZONES } from './presets';
 import { DAY, code, round2, seeded, uid, ymd } from './utils';
 import { PLATFORM } from '../platform.config';
 
@@ -29,6 +29,7 @@ export interface WizardAnswers {
   payments: DemoConfig['payments'];
   defaultLang: Lang;
   lead: DemoConfig['lead'];
+  ui?: Partial<AppUi>;
 }
 
 export function defaultAnswers(industry: Industry): WizardAnswers {
@@ -64,8 +65,9 @@ export function buildConfig(a: WizardAnswers): DemoConfig {
     modules: a.modules,
     payments: { ...a.payments, wallet: a.modules.wallet },
     fulfillment: {
-      zones: structuredClone(pr.zones), minOrder: a.industry === 'retail' ? 0 : 8,
-      freeDeliveryOver: a.industry === 'retail' ? 60 : 25, prepMinutes: a.industry === 'cafe' ? 10 : a.industry === 'restaurant' ? 25 : 30,
+      zones: structuredClone(a.business.country === 'Lebanon' ? LEBANON_ZONES : pr.zones), minOrder: 8,
+      freeDeliveryOver: a.industry === 'fastfood' ? 15 : a.industry === 'bakery' ? 20 : 25,
+      prepMinutes: { cafe: 10, bakery: 15, fastfood: 20, restaurant: 25 }[a.industry] ?? 20,
       taxRate: 11, taxIncluded: true,
     },
     loyalty: {
@@ -79,9 +81,20 @@ export function buildConfig(a: WizardAnswers): DemoConfig {
     wallet: { topUps: [10, 25, 50, 100], bonusPercent: 10 },
     tips: [0, 5, 10, 15],
     dual: defaultDual(a.business.country, a.business.currency),
+    ui: { ...defaultUi(a.industry), ...(a.ui ?? {}) },
     lead: a.lead,
   };
 }
+
+export const defaultUi = (industry: Industry): AppUi => ({
+  theme: 'light',
+  header: industry === 'fastfood' ? 'gradient' : 'solid',
+  menuLayout: industry === 'bakery' ? 'grid' : industry === 'fastfood' ? 'large' : 'list',
+  cardStyle: 'elevated',
+  sections: ['active', 'loyalty', 'quick', 'banners', 'deals', 'reorder', 'categories', 'favorites', 'popular', 'new', 'info'],
+  coverEmoji: PRESETS[industry]?.emoji ?? '🍽️',
+  showCalories: true,
+});
 
 const defaultDual = (country: string, currency: string) => ({
   enabled: country === 'Lebanon' && currency === 'USD', currency: 'LBP', rate: 89500, roundTo: 5000,
@@ -92,7 +105,8 @@ const RIDERS = [['Khaled M.', '1001'], ['Rami H.', '1002'], ['Ali S.', '1003']];
 const BIRTHDAY: Record<string, { en: string; ar: string }> = {
   restaurant: { en: 'Free birthday dessert 🎂', ar: 'حلوى مجانية في عيد ميلادك 🎂' },
   cafe: { en: 'Free birthday drink 🎂', ar: 'مشروب مجاني في عيد ميلادك 🎂' },
-  retail: { en: '$15 birthday gift 🎂', ar: 'هدية 15$ في عيد ميلادك 🎂' },
+  bakery: { en: 'Free birthday cupcake box 🎂', ar: 'علبة كب كيك مجانية في عيد ميلادك 🎂' },
+  fastfood: { en: 'Free birthday meal 🎂', ar: 'وجبة مجانية في عيد ميلادك 🎂' },
 };
 
 function makeBranches(answer: string | undefined, city: string, phone: string) {
@@ -108,7 +122,9 @@ function makeBranches(answer: string | undefined, city: string, phone: string) {
 /** Fill fields added in later versions, so older saved demos keep working. */
 export function migrateConfig(c: DemoConfig): DemoConfig {
   const m = c.modules as Record<string, boolean>;
-  for (const k of ['wallet', 'tips', 'reviews', 'referrals', 'tableQr']) if (m[k] === undefined) m[k] = k === 'tips' || k === 'tableQr' ? c.industry !== 'retail' : true;
+  if (!PRESETS[c.industry]) c.industry = 'restaurant'; // older demos (e.g. retail) open as restaurants
+  for (const k of ['wallet', 'tips', 'reviews', 'referrals', 'tableQr']) if (m[k] === undefined) m[k] = true;
+  c.ui ??= defaultUi(c.industry);
   c.business.closedDays ??= [];
   c.business.ordersPaused ??= false;
   c.business.busyExtraMinutes ??= 0;
@@ -135,6 +151,7 @@ export function migrateData(d: DemoData, c: DemoConfig): DemoData {
   d.orders.forEach((o) => (o.tip ??= 0));
   d.riders ??= RIDERS.map(([name, pin], i) => ({ id: 'rd' + (i + 1), name, phone: '+961 76 ' + (300100 + i * 1111), pin, active: true, onShift: i < 2, shiftStart: Date.now() - 4 * 3600000 }));
   d.collections ??= [];
+  d.serviceRequests ??= [];
   d.settlements ??= [];
   void c;
   return d;
@@ -170,7 +187,7 @@ export function buildData(cfg: DemoConfig): DemoData {
   let num = 1001;
   const makeOrder = (custIdx: number, at: number, status: Order['status']): Order => {
     const c = customers[custIdx];
-    const count = 1 + r(cfg.industry === 'retail' ? 2 : 4);
+    const count = 1 + r(4);
     const items = Array.from({ length: count }, () => {
       const p = products[r(products.length)];
       return { productId: p.id, name: p.name, emoji: p.emoji, qty: 1 + (r(4) === 0 ? 1 : 0), unitPrice: p.price, options: [] };
@@ -326,6 +343,7 @@ export function buildData(cfg: DemoConfig): DemoData {
     riders: RIDERS.map(([name, pin], i) => ({ id: 'rd' + (i + 1), name, phone: '+961 76 ' + (300100 + i * 1111), pin, active: true, onShift: i < 2, shiftStart: now - 4 * 3600000, branchId: undefined })),
     collections,
     settlements,
+    serviceRequests: [],
     walletTx: cfg.modules.wallet ? [{ id: uid('w'), customerId: meId, amount: 12, kind: 'gift', note: 'Welcome credit', at: now - 5 * DAY }] : [],
     usedTokens: [],
     staticScans: [],

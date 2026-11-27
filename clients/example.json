@@ -1,0 +1,1781 @@
+{
+  "format": "demo-studio-client",
+  "version": 1,
+  "exportedAt": "2026-11-27T12:40:16.139Z",
+  "slug": "example",
+  "ownerPin": "1234",
+  "config": {
+    "id": "d75n9h2y5w4",
+    "createdAt": 1795783195731,
+    "expiresAt": 2111143216132,
+    "industry": "fastfood",
+    "origin": "wizard",
+    "business": {
+      "name": {
+        "en": "Slice Station (example)",
+        "ar": "سلايس ستيشن (مثال)"
+      },
+      "tagline": {
+        "en": "Hot, fast and at your door.",
+        "ar": "ساخن وسريع وعلى بابك."
+      },
+      "logoEmoji": "🍕",
+      "phone": "+96170111222",
+      "email": "",
+      "address": "",
+      "city": "",
+      "country": "Lebanon",
+      "currency": "USD",
+      "openTime": "11:00",
+      "closeTime": "01:00",
+      "closedDays": [],
+      "ordersPaused": false,
+      "busyExtraMinutes": 0
+    },
+    "brand": {
+      "primary": "#dc2626",
+      "secondary": "#facc15",
+      "radius": "round",
+      "font": "friendly",
+      "headerStyle": "solid"
+    },
+    "defaultLang": "en",
+    "modules": {
+      "ordering": true,
+      "delivery": true,
+      "pickup": true,
+      "dineIn": true,
+      "loyaltyPoints": true,
+      "loyaltyStamps": true,
+      "vipTiers": false,
+      "staticQr": true,
+      "deals": true,
+      "campaigns": true,
+      "reservations": false,
+      "wallet": true,
+      "tips": true,
+      "reviews": true,
+      "referrals": true,
+      "tableQr": true
+    },
+    "payments": {
+      "card": true,
+      "applePay": true,
+      "googlePay": true,
+      "cash": true,
+      "wallet": true
+    },
+    "fulfillment": {
+      "zones": [
+        {
+          "id": "z1",
+          "name": {
+            "en": "Hamra & Ras Beirut",
+            "ar": "الحمرا ورأس بيروت"
+          },
+          "fee": 1.5,
+          "eta": 25
+        },
+        {
+          "id": "z2",
+          "name": {
+            "en": "Achrafieh & Gemmayzeh",
+            "ar": "الأشرفية والجميزة"
+          },
+          "fee": 2,
+          "eta": 30
+        },
+        {
+          "id": "z3",
+          "name": {
+            "en": "Verdun & Mar Elias",
+            "ar": "فردان ومار الياس"
+          },
+          "fee": 2,
+          "eta": 30
+        },
+        {
+          "id": "z4",
+          "name": {
+            "en": "Jnah & Bir Hassan",
+            "ar": "الجناح وبئر حسن"
+          },
+          "fee": 3,
+          "eta": 40,
+          "minOrder": 12
+        },
+        {
+          "id": "z5",
+          "name": {
+            "en": "Dekwaneh & Sin el Fil",
+            "ar": "الدكوانة وسن الفيل"
+          },
+          "fee": 4,
+          "eta": 45,
+          "minOrder": 15
+        }
+      ],
+      "minOrder": 8,
+      "freeDeliveryOver": 15,
+      "prepMinutes": 20,
+      "taxRate": 11,
+      "taxIncluded": true
+    },
+    "loyalty": {
+      "pointsPerUnit": 10,
+      "stampsTarget": 8,
+      "stampReward": {
+        "en": "Free medium pizza",
+        "ar": "بيتزا وسط مجانية"
+      },
+      "stampRule": "perOrder",
+      "stampCategoryIds": [],
+      "signupBonus": 50,
+      "referralBonus": 100,
+      "birthdayReward": {
+        "en": "Free birthday meal 🎂",
+        "ar": "وجبة مجانية في عيد ميلادك 🎂"
+      },
+      "staticQr": {
+        "dailyLimit": 2,
+        "cooldownMinutes": 60,
+        "requirePin": false,
+        "pin": "4321"
+      },
+      "tiers": [
+        {
+          "id": "t0",
+          "name": {
+            "en": "Member",
+            "ar": "عضو"
+          },
+          "minPoints": 0,
+          "multiplier": 1,
+          "color": "#9ca3af"
+        },
+        {
+          "id": "t1",
+          "name": {
+            "en": "Silver",
+            "ar": "فضي"
+          },
+          "minPoints": 500,
+          "multiplier": 1.25,
+          "color": "#64748b"
+        },
+        {
+          "id": "t2",
+          "name": {
+            "en": "Gold",
+            "ar": "ذهبي"
+          },
+          "minPoints": 1500,
+          "multiplier": 1.5,
+          "color": "#ca8a04"
+        },
+        {
+          "id": "t3",
+          "name": {
+            "en": "Platinum",
+            "ar": "بلاتيني"
+          },
+          "minPoints": 4000,
+          "multiplier": 2,
+          "color": "#6366f1"
+        }
+      ]
+    },
+    "reservations": {
+      "slotMinutes": 60,
+      "capacityPerSlot": 2,
+      "maxParty": 80,
+      "daysAhead": 14
+    },
+    "branches": [
+      {
+        "id": "br1",
+        "name": {
+          "en": "Main branch",
+          "ar": "الفرع الرئيسي"
+        },
+        "address": "Downtown street 10",
+        "phone": "+96170111222"
+      }
+    ],
+    "wallet": {
+      "topUps": [
+        10,
+        25,
+        50,
+        100
+      ],
+      "bonusPercent": 10
+    },
+    "tips": [
+      0,
+      5,
+      10,
+      15
+    ],
+    "dual": {
+      "enabled": true,
+      "currency": "LBP",
+      "rate": 89500,
+      "roundTo": 5000
+    },
+    "ui": {
+      "theme": "dark",
+      "header": "image",
+      "menuLayout": "large",
+      "cardStyle": "elevated",
+      "sections": [
+        "active",
+        "loyalty",
+        "quick",
+        "banners",
+        "deals",
+        "reorder",
+        "categories",
+        "favorites",
+        "popular",
+        "new",
+        "info"
+      ],
+      "coverEmoji": "🍕",
+      "showCalories": true
+    },
+    "lead": {
+      "ownerName": "",
+      "email": "",
+      "phone": "",
+      "answers": {}
+    },
+    "noSync": true
+  },
+  "catalog": {
+    "categories": [
+      {
+        "id": "c-deals",
+        "name": {
+          "en": "Meal deals",
+          "ar": "وجبات كومبو"
+        },
+        "emoji": "🔥"
+      },
+      {
+        "id": "c-pizza",
+        "name": {
+          "en": "Pizza",
+          "ar": "بيتزا"
+        },
+        "emoji": "🍕"
+      },
+      {
+        "id": "c-burg",
+        "name": {
+          "en": "Burgers",
+          "ar": "برغر"
+        },
+        "emoji": "🍔"
+      },
+      {
+        "id": "c-chicken",
+        "name": {
+          "en": "Chicken",
+          "ar": "دجاج"
+        },
+        "emoji": "🍗"
+      },
+      {
+        "id": "c-sides",
+        "name": {
+          "en": "Sides",
+          "ar": "مقبلات"
+        },
+        "emoji": "🍟"
+      },
+      {
+        "id": "c-drinks",
+        "name": {
+          "en": "Drinks",
+          "ar": "مشروبات"
+        },
+        "emoji": "🥤"
+      }
+    ],
+    "products": [
+      {
+        "id": "p501",
+        "categoryId": "c-deals",
+        "name": {
+          "en": "Burger Meal",
+          "ar": "وجبة برغر"
+        },
+        "desc": {
+          "en": "Any burger + side + drink.",
+          "ar": "أي برغر + طبق جانبي + مشروب."
+        },
+        "price": 11,
+        "emoji": "🍔",
+        "bg": "#fde7d4",
+        "active": true,
+        "stock": null,
+        "groups": [
+          {
+            "id": "g-cb",
+            "name": {
+              "en": "Choose your burger",
+              "ar": "اختر البرغر"
+            },
+            "required": true,
+            "multi": false,
+            "options": [
+              {
+                "id": "o-cb1",
+                "name": {
+                  "en": "Classic beef",
+                  "ar": "لحم كلاسيك"
+                },
+                "priceDelta": 0
+              },
+              {
+                "id": "o-cb2",
+                "name": {
+                  "en": "Crispy chicken",
+                  "ar": "دجاج مقرمش"
+                },
+                "priceDelta": 0
+              },
+              {
+                "id": "o-cb3",
+                "name": {
+                  "en": "Double smash",
+                  "ar": "سماش مزدوج"
+                },
+                "priceDelta": 2.5
+              }
+            ]
+          },
+          {
+            "id": "g-cs",
+            "name": {
+              "en": "Choose a side",
+              "ar": "اختر طبقاً جانبياً"
+            },
+            "required": true,
+            "multi": false,
+            "options": [
+              {
+                "id": "o-cs1",
+                "name": {
+                  "en": "Fries",
+                  "ar": "بطاطا"
+                },
+                "priceDelta": 0
+              },
+              {
+                "id": "o-cs2",
+                "name": {
+                  "en": "Curly fries",
+                  "ar": "بطاطا حلزونية"
+                },
+                "priceDelta": 1
+              },
+              {
+                "id": "o-cs3",
+                "name": {
+                  "en": "Onion rings",
+                  "ar": "حلقات البصل"
+                },
+                "priceDelta": 1
+              }
+            ]
+          },
+          {
+            "id": "g-cd",
+            "name": {
+              "en": "Choose a drink",
+              "ar": "اختر مشروباً"
+            },
+            "required": true,
+            "multi": false,
+            "options": [
+              {
+                "id": "o-cd1",
+                "name": {
+                  "en": "Cola",
+                  "ar": "كولا"
+                },
+                "priceDelta": 0
+              },
+              {
+                "id": "o-cd2",
+                "name": {
+                  "en": "Diet cola",
+                  "ar": "دايت"
+                },
+                "priceDelta": 0
+              },
+              {
+                "id": "o-cd3",
+                "name": {
+                  "en": "Lemonade",
+                  "ar": "ليموناضة"
+                },
+                "priceDelta": 1
+              }
+            ]
+          }
+        ],
+        "tags": [
+          "bestseller"
+        ],
+        "popular": true,
+        "compareAt": 14,
+        "allergens": [
+          "gluten",
+          "dairy",
+          "sesame"
+        ]
+      },
+      {
+        "id": "p502",
+        "categoryId": "c-deals",
+        "name": {
+          "en": "Pizza Night for 2",
+          "ar": "سهرة بيتزا لشخصين"
+        },
+        "desc": {
+          "en": "2 medium pizzas + garlic bread + 2 drinks.",
+          "ar": "بيتزا وسط ×2 + خبز بالثوم + مشروبان."
+        },
+        "price": 24,
+        "emoji": "🍕",
+        "bg": "#fee2e2",
+        "active": true,
+        "stock": null,
+        "groups": [
+          {
+            "id": "g-crust",
+            "name": {
+              "en": "Crust",
+              "ar": "العجينة"
+            },
+            "required": true,
+            "multi": false,
+            "options": [
+              {
+                "id": "o-cl",
+                "name": {
+                  "en": "Classic",
+                  "ar": "كلاسيك"
+                },
+                "priceDelta": 0
+              },
+              {
+                "id": "o-th",
+                "name": {
+                  "en": "Thin",
+                  "ar": "رقيقة"
+                },
+                "priceDelta": 0
+              },
+              {
+                "id": "o-st",
+                "name": {
+                  "en": "Cheese-stuffed",
+                  "ar": "محشوة بالجبنة"
+                },
+                "priceDelta": 2
+              }
+            ]
+          }
+        ],
+        "tags": [],
+        "popular": true,
+        "compareAt": 31,
+        "allergens": [
+          "gluten",
+          "dairy"
+        ]
+      },
+      {
+        "id": "p503",
+        "categoryId": "c-deals",
+        "name": {
+          "en": "Family Bucket",
+          "ar": "دلو العائلة"
+        },
+        "desc": {
+          "en": "12 crispy pieces, 2 large fries, 4 dips.",
+          "ar": "12 قطعة مقرمشة، بطاطا كبيرة ×2، 4 صلصات."
+        },
+        "price": 29,
+        "emoji": "🪣",
+        "bg": "#fef3c7",
+        "active": true,
+        "stock": null,
+        "groups": [],
+        "tags": [],
+        "compareAt": 36,
+        "allergens": [
+          "gluten",
+          "eggs"
+        ]
+      },
+      {
+        "id": "p504",
+        "categoryId": "c-pizza",
+        "name": {
+          "en": "Margherita",
+          "ar": "مارغريتا"
+        },
+        "desc": {
+          "en": "Tomato, mozzarella, basil.",
+          "ar": "بندورة، موزاريلا، ريحان."
+        },
+        "price": 9,
+        "emoji": "🍕",
+        "bg": "#fee2e2",
+        "active": true,
+        "stock": null,
+        "groups": [
+          {
+            "id": "g-psize",
+            "name": {
+              "en": "Size",
+              "ar": "الحجم"
+            },
+            "required": true,
+            "multi": false,
+            "options": [
+              {
+                "id": "o-ps",
+                "name": {
+                  "en": "Small 8\"",
+                  "ar": "صغير"
+                },
+                "priceDelta": 0
+              },
+              {
+                "id": "o-pm",
+                "name": {
+                  "en": "Medium 12\"",
+                  "ar": "وسط"
+                },
+                "priceDelta": 3
+              },
+              {
+                "id": "o-pl",
+                "name": {
+                  "en": "Large 14\"",
+                  "ar": "كبير"
+                },
+                "priceDelta": 5
+              }
+            ]
+          },
+          {
+            "id": "g-crust",
+            "name": {
+              "en": "Crust",
+              "ar": "العجينة"
+            },
+            "required": true,
+            "multi": false,
+            "options": [
+              {
+                "id": "o-cl",
+                "name": {
+                  "en": "Classic",
+                  "ar": "كلاسيك"
+                },
+                "priceDelta": 0
+              },
+              {
+                "id": "o-th",
+                "name": {
+                  "en": "Thin",
+                  "ar": "رقيقة"
+                },
+                "priceDelta": 0
+              },
+              {
+                "id": "o-st",
+                "name": {
+                  "en": "Cheese-stuffed",
+                  "ar": "محشوة بالجبنة"
+                },
+                "priceDelta": 2
+              }
+            ]
+          },
+          {
+            "id": "g-top",
+            "name": {
+              "en": "Extra toppings",
+              "ar": "إضافات"
+            },
+            "required": false,
+            "multi": true,
+            "options": [
+              {
+                "id": "o-t1",
+                "name": {
+                  "en": "Mushrooms",
+                  "ar": "فطر"
+                },
+                "priceDelta": 1
+              },
+              {
+                "id": "o-t2",
+                "name": {
+                  "en": "Olives",
+                  "ar": "زيتون"
+                },
+                "priceDelta": 1
+              },
+              {
+                "id": "o-t3",
+                "name": {
+                  "en": "Jalapeños",
+                  "ar": "هالبينو"
+                },
+                "priceDelta": 1
+              },
+              {
+                "id": "o-t4",
+                "name": {
+                  "en": "Extra mozzarella",
+                  "ar": "موزاريلا إضافية"
+                },
+                "priceDelta": 1.5
+              },
+              {
+                "id": "o-t5",
+                "name": {
+                  "en": "Pepperoni",
+                  "ar": "بيبروني"
+                },
+                "priceDelta": 2
+              }
+            ],
+            "max": 3
+          }
+        ],
+        "tags": [
+          "vegetarian"
+        ],
+        "allergens": [
+          "gluten",
+          "dairy"
+        ],
+        "calories": 780
+      },
+      {
+        "id": "p505",
+        "categoryId": "c-pizza",
+        "name": {
+          "en": "Pepperoni",
+          "ar": "بيبروني"
+        },
+        "desc": {
+          "en": "Double pepperoni, mozzarella.",
+          "ar": "بيبروني مزدوج وموزاريلا."
+        },
+        "price": 11,
+        "emoji": "🍕",
+        "bg": "#fecaca",
+        "active": true,
+        "stock": null,
+        "groups": [
+          {
+            "id": "g-psize",
+            "name": {
+              "en": "Size",
+              "ar": "الحجم"
+            },
+            "required": true,
+            "multi": false,
+            "options": [
+              {
+                "id": "o-ps",
+                "name": {
+                  "en": "Small 8\"",
+                  "ar": "صغير"
+                },
+                "priceDelta": 0
+              },
+              {
+                "id": "o-pm",
+                "name": {
+                  "en": "Medium 12\"",
+                  "ar": "وسط"
+                },
+                "priceDelta": 3
+              },
+              {
+                "id": "o-pl",
+                "name": {
+                  "en": "Large 14\"",
+                  "ar": "كبير"
+                },
+                "priceDelta": 5
+              }
+            ]
+          },
+          {
+            "id": "g-crust",
+            "name": {
+              "en": "Crust",
+              "ar": "العجينة"
+            },
+            "required": true,
+            "multi": false,
+            "options": [
+              {
+                "id": "o-cl",
+                "name": {
+                  "en": "Classic",
+                  "ar": "كلاسيك"
+                },
+                "priceDelta": 0
+              },
+              {
+                "id": "o-th",
+                "name": {
+                  "en": "Thin",
+                  "ar": "رقيقة"
+                },
+                "priceDelta": 0
+              },
+              {
+                "id": "o-st",
+                "name": {
+                  "en": "Cheese-stuffed",
+                  "ar": "محشوة بالجبنة"
+                },
+                "priceDelta": 2
+              }
+            ]
+          },
+          {
+            "id": "g-top",
+            "name": {
+              "en": "Extra toppings",
+              "ar": "إضافات"
+            },
+            "required": false,
+            "multi": true,
+            "options": [
+              {
+                "id": "o-t1",
+                "name": {
+                  "en": "Mushrooms",
+                  "ar": "فطر"
+                },
+                "priceDelta": 1
+              },
+              {
+                "id": "o-t2",
+                "name": {
+                  "en": "Olives",
+                  "ar": "زيتون"
+                },
+                "priceDelta": 1
+              },
+              {
+                "id": "o-t3",
+                "name": {
+                  "en": "Jalapeños",
+                  "ar": "هالبينو"
+                },
+                "priceDelta": 1
+              },
+              {
+                "id": "o-t4",
+                "name": {
+                  "en": "Extra mozzarella",
+                  "ar": "موزاريلا إضافية"
+                },
+                "priceDelta": 1.5
+              },
+              {
+                "id": "o-t5",
+                "name": {
+                  "en": "Pepperoni",
+                  "ar": "بيبروني"
+                },
+                "priceDelta": 2
+              }
+            ],
+            "max": 3
+          }
+        ],
+        "tags": [],
+        "popular": true,
+        "allergens": [
+          "gluten",
+          "dairy"
+        ],
+        "calories": 920
+      },
+      {
+        "id": "p506",
+        "categoryId": "c-pizza",
+        "name": {
+          "en": "BBQ Chicken",
+          "ar": "دجاج باربيكيو"
+        },
+        "desc": {
+          "en": "Grilled chicken, red onion, BBQ.",
+          "ar": "دجاج مشوي، بصل أحمر، باربيكيو."
+        },
+        "price": 12,
+        "emoji": "🍗",
+        "bg": "#fde8d4",
+        "active": true,
+        "stock": null,
+        "groups": [
+          {
+            "id": "g-psize",
+            "name": {
+              "en": "Size",
+              "ar": "الحجم"
+            },
+            "required": true,
+            "multi": false,
+            "options": [
+              {
+                "id": "o-ps",
+                "name": {
+                  "en": "Small 8\"",
+                  "ar": "صغير"
+                },
+                "priceDelta": 0
+              },
+              {
+                "id": "o-pm",
+                "name": {
+                  "en": "Medium 12\"",
+                  "ar": "وسط"
+                },
+                "priceDelta": 3
+              },
+              {
+                "id": "o-pl",
+                "name": {
+                  "en": "Large 14\"",
+                  "ar": "كبير"
+                },
+                "priceDelta": 5
+              }
+            ]
+          },
+          {
+            "id": "g-crust",
+            "name": {
+              "en": "Crust",
+              "ar": "العجينة"
+            },
+            "required": true,
+            "multi": false,
+            "options": [
+              {
+                "id": "o-cl",
+                "name": {
+                  "en": "Classic",
+                  "ar": "كلاسيك"
+                },
+                "priceDelta": 0
+              },
+              {
+                "id": "o-th",
+                "name": {
+                  "en": "Thin",
+                  "ar": "رقيقة"
+                },
+                "priceDelta": 0
+              },
+              {
+                "id": "o-st",
+                "name": {
+                  "en": "Cheese-stuffed",
+                  "ar": "محشوة بالجبنة"
+                },
+                "priceDelta": 2
+              }
+            ]
+          },
+          {
+            "id": "g-top",
+            "name": {
+              "en": "Extra toppings",
+              "ar": "إضافات"
+            },
+            "required": false,
+            "multi": true,
+            "options": [
+              {
+                "id": "o-t1",
+                "name": {
+                  "en": "Mushrooms",
+                  "ar": "فطر"
+                },
+                "priceDelta": 1
+              },
+              {
+                "id": "o-t2",
+                "name": {
+                  "en": "Olives",
+                  "ar": "زيتون"
+                },
+                "priceDelta": 1
+              },
+              {
+                "id": "o-t3",
+                "name": {
+                  "en": "Jalapeños",
+                  "ar": "هالبينو"
+                },
+                "priceDelta": 1
+              },
+              {
+                "id": "o-t4",
+                "name": {
+                  "en": "Extra mozzarella",
+                  "ar": "موزاريلا إضافية"
+                },
+                "priceDelta": 1.5
+              },
+              {
+                "id": "o-t5",
+                "name": {
+                  "en": "Pepperoni",
+                  "ar": "بيبروني"
+                },
+                "priceDelta": 2
+              }
+            ],
+            "max": 3
+          }
+        ],
+        "tags": [],
+        "allergens": [
+          "gluten",
+          "dairy"
+        ]
+      },
+      {
+        "id": "p507",
+        "categoryId": "c-pizza",
+        "name": {
+          "en": "Veggie Supreme",
+          "ar": "خضار سوبريم"
+        },
+        "desc": {
+          "en": "Peppers, mushrooms, olives, onion.",
+          "ar": "فليفلة، فطر، زيتون، بصل."
+        },
+        "price": 10.5,
+        "emoji": "🫑",
+        "bg": "#e3f4d7",
+        "active": true,
+        "stock": null,
+        "groups": [
+          {
+            "id": "g-psize",
+            "name": {
+              "en": "Size",
+              "ar": "الحجم"
+            },
+            "required": true,
+            "multi": false,
+            "options": [
+              {
+                "id": "o-ps",
+                "name": {
+                  "en": "Small 8\"",
+                  "ar": "صغير"
+                },
+                "priceDelta": 0
+              },
+              {
+                "id": "o-pm",
+                "name": {
+                  "en": "Medium 12\"",
+                  "ar": "وسط"
+                },
+                "priceDelta": 3
+              },
+              {
+                "id": "o-pl",
+                "name": {
+                  "en": "Large 14\"",
+                  "ar": "كبير"
+                },
+                "priceDelta": 5
+              }
+            ]
+          },
+          {
+            "id": "g-crust",
+            "name": {
+              "en": "Crust",
+              "ar": "العجينة"
+            },
+            "required": true,
+            "multi": false,
+            "options": [
+              {
+                "id": "o-cl",
+                "name": {
+                  "en": "Classic",
+                  "ar": "كلاسيك"
+                },
+                "priceDelta": 0
+              },
+              {
+                "id": "o-th",
+                "name": {
+                  "en": "Thin",
+                  "ar": "رقيقة"
+                },
+                "priceDelta": 0
+              },
+              {
+                "id": "o-st",
+                "name": {
+                  "en": "Cheese-stuffed",
+                  "ar": "محشوة بالجبنة"
+                },
+                "priceDelta": 2
+              }
+            ]
+          },
+          {
+            "id": "g-top",
+            "name": {
+              "en": "Extra toppings",
+              "ar": "إضافات"
+            },
+            "required": false,
+            "multi": true,
+            "options": [
+              {
+                "id": "o-t1",
+                "name": {
+                  "en": "Mushrooms",
+                  "ar": "فطر"
+                },
+                "priceDelta": 1
+              },
+              {
+                "id": "o-t2",
+                "name": {
+                  "en": "Olives",
+                  "ar": "زيتون"
+                },
+                "priceDelta": 1
+              },
+              {
+                "id": "o-t3",
+                "name": {
+                  "en": "Jalapeños",
+                  "ar": "هالبينو"
+                },
+                "priceDelta": 1
+              },
+              {
+                "id": "o-t4",
+                "name": {
+                  "en": "Extra mozzarella",
+                  "ar": "موزاريلا إضافية"
+                },
+                "priceDelta": 1.5
+              },
+              {
+                "id": "o-t5",
+                "name": {
+                  "en": "Pepperoni",
+                  "ar": "بيبروني"
+                },
+                "priceDelta": 2
+              }
+            ],
+            "max": 3
+          }
+        ],
+        "tags": [
+          "vegetarian"
+        ],
+        "allergens": [
+          "gluten",
+          "dairy"
+        ]
+      },
+      {
+        "id": "p508",
+        "categoryId": "c-burg",
+        "name": {
+          "en": "Classic Cheeseburger",
+          "ar": "تشيز برغر كلاسيك"
+        },
+        "desc": {
+          "en": "Beef, cheddar, pickles, house sauce.",
+          "ar": "لحم، شيدر، مخلل، صلصة البيت."
+        },
+        "price": 7.5,
+        "emoji": "🍔",
+        "bg": "#fde7d4",
+        "active": true,
+        "stock": null,
+        "groups": [
+          {
+            "id": "g-add",
+            "name": {
+              "en": "Add-ons",
+              "ar": "إضافات"
+            },
+            "required": false,
+            "multi": true,
+            "options": [
+              {
+                "id": "o-cheese",
+                "name": {
+                  "en": "Extra cheese",
+                  "ar": "جبنة إضافية"
+                },
+                "priceDelta": 1
+              },
+              {
+                "id": "o-bacon",
+                "name": {
+                  "en": "Beef bacon",
+                  "ar": "لحم مقدد"
+                },
+                "priceDelta": 1.5
+              },
+              {
+                "id": "o-avo",
+                "name": {
+                  "en": "Avocado",
+                  "ar": "أفوكادو"
+                },
+                "priceDelta": 1.5
+              },
+              {
+                "id": "o-egg",
+                "name": {
+                  "en": "Fried egg",
+                  "ar": "بيض مقلي"
+                },
+                "priceDelta": 1
+              }
+            ]
+          }
+        ],
+        "tags": [],
+        "popular": true,
+        "allergens": [
+          "gluten",
+          "dairy",
+          "sesame"
+        ],
+        "calories": 640
+      },
+      {
+        "id": "p509",
+        "categoryId": "c-burg",
+        "name": {
+          "en": "Double Smash",
+          "ar": "سماش مزدوج"
+        },
+        "desc": {
+          "en": "Two smashed patties, double cheese.",
+          "ar": "قطعتان مضغوطتان وجبنة مزدوجة."
+        },
+        "price": 9.5,
+        "emoji": "🍔",
+        "bg": "#fbd9c4",
+        "active": true,
+        "stock": null,
+        "groups": [
+          {
+            "id": "g-add",
+            "name": {
+              "en": "Add-ons",
+              "ar": "إضافات"
+            },
+            "required": false,
+            "multi": true,
+            "options": [
+              {
+                "id": "o-cheese",
+                "name": {
+                  "en": "Extra cheese",
+                  "ar": "جبنة إضافية"
+                },
+                "priceDelta": 1
+              },
+              {
+                "id": "o-bacon",
+                "name": {
+                  "en": "Beef bacon",
+                  "ar": "لحم مقدد"
+                },
+                "priceDelta": 1.5
+              },
+              {
+                "id": "o-avo",
+                "name": {
+                  "en": "Avocado",
+                  "ar": "أفوكادو"
+                },
+                "priceDelta": 1.5
+              },
+              {
+                "id": "o-egg",
+                "name": {
+                  "en": "Fried egg",
+                  "ar": "بيض مقلي"
+                },
+                "priceDelta": 1
+              }
+            ]
+          }
+        ],
+        "tags": [],
+        "isNew": true,
+        "allergens": [
+          "gluten",
+          "dairy",
+          "sesame"
+        ],
+        "calories": 910
+      },
+      {
+        "id": "p510",
+        "categoryId": "c-burg",
+        "name": {
+          "en": "Zinger Burger",
+          "ar": "زنجر برغر"
+        },
+        "desc": {
+          "en": "Spicy crispy chicken, lettuce, mayo.",
+          "ar": "دجاج مقرمش حار، خس، مايونيز."
+        },
+        "price": 7,
+        "emoji": "🌶️",
+        "bg": "#fdecc8",
+        "active": true,
+        "stock": null,
+        "groups": [
+          {
+            "id": "g-add",
+            "name": {
+              "en": "Add-ons",
+              "ar": "إضافات"
+            },
+            "required": false,
+            "multi": true,
+            "options": [
+              {
+                "id": "o-cheese",
+                "name": {
+                  "en": "Extra cheese",
+                  "ar": "جبنة إضافية"
+                },
+                "priceDelta": 1
+              },
+              {
+                "id": "o-bacon",
+                "name": {
+                  "en": "Beef bacon",
+                  "ar": "لحم مقدد"
+                },
+                "priceDelta": 1.5
+              },
+              {
+                "id": "o-avo",
+                "name": {
+                  "en": "Avocado",
+                  "ar": "أفوكادو"
+                },
+                "priceDelta": 1.5
+              },
+              {
+                "id": "o-egg",
+                "name": {
+                  "en": "Fried egg",
+                  "ar": "بيض مقلي"
+                },
+                "priceDelta": 1
+              }
+            ]
+          }
+        ],
+        "tags": [
+          "spicy"
+        ],
+        "allergens": [
+          "gluten",
+          "eggs"
+        ]
+      },
+      {
+        "id": "p511",
+        "categoryId": "c-chicken",
+        "name": {
+          "en": "Crispy Tenders (5)",
+          "ar": "أصابع دجاج (5)"
+        },
+        "desc": {
+          "en": "Hand-breaded, with 2 dips.",
+          "ar": "مقرمشة مع صلصتين."
+        },
+        "price": 7.5,
+        "emoji": "🍗",
+        "bg": "#fdecc8",
+        "active": true,
+        "stock": null,
+        "groups": [
+          {
+            "id": "g-sauce",
+            "name": {
+              "en": "Dips (up to 2)",
+              "ar": "صلصات (حتى 2)"
+            },
+            "required": false,
+            "multi": true,
+            "options": [
+              {
+                "id": "o-s1",
+                "name": {
+                  "en": "Garlic",
+                  "ar": "ثوم"
+                },
+                "priceDelta": 0.5
+              },
+              {
+                "id": "o-s2",
+                "name": {
+                  "en": "BBQ",
+                  "ar": "باربيكيو"
+                },
+                "priceDelta": 0.5
+              },
+              {
+                "id": "o-s3",
+                "name": {
+                  "en": "Ranch",
+                  "ar": "رانش"
+                },
+                "priceDelta": 0.5
+              },
+              {
+                "id": "o-s4",
+                "name": {
+                  "en": "Spicy mayo",
+                  "ar": "مايونيز حار"
+                },
+                "priceDelta": 0.5
+              }
+            ],
+            "max": 2
+          }
+        ],
+        "tags": [
+          "kids"
+        ],
+        "allergens": [
+          "gluten",
+          "eggs"
+        ]
+      },
+      {
+        "id": "p512",
+        "categoryId": "c-chicken",
+        "name": {
+          "en": "Hot Wings (8)",
+          "ar": "أجنحة حارة (8)"
+        },
+        "desc": {
+          "en": "Buffalo sauce, ranch.",
+          "ar": "صلصة بافلو مع رانش."
+        },
+        "price": 8,
+        "emoji": "🔥",
+        "bg": "#fee2e2",
+        "active": true,
+        "stock": null,
+        "groups": [
+          {
+            "id": "g-sauce",
+            "name": {
+              "en": "Dips (up to 2)",
+              "ar": "صلصات (حتى 2)"
+            },
+            "required": false,
+            "multi": true,
+            "options": [
+              {
+                "id": "o-s1",
+                "name": {
+                  "en": "Garlic",
+                  "ar": "ثوم"
+                },
+                "priceDelta": 0.5
+              },
+              {
+                "id": "o-s2",
+                "name": {
+                  "en": "BBQ",
+                  "ar": "باربيكيو"
+                },
+                "priceDelta": 0.5
+              },
+              {
+                "id": "o-s3",
+                "name": {
+                  "en": "Ranch",
+                  "ar": "رانش"
+                },
+                "priceDelta": 0.5
+              },
+              {
+                "id": "o-s4",
+                "name": {
+                  "en": "Spicy mayo",
+                  "ar": "مايونيز حار"
+                },
+                "priceDelta": 0.5
+              }
+            ],
+            "max": 2
+          }
+        ],
+        "tags": [
+          "spicy"
+        ],
+        "allergens": [
+          "dairy"
+        ]
+      },
+      {
+        "id": "p513",
+        "categoryId": "c-sides",
+        "name": {
+          "en": "Fries",
+          "ar": "بطاطا مقلية"
+        },
+        "desc": {
+          "en": "Crispy, sea salt.",
+          "ar": "مقرمشة مع ملح البحر."
+        },
+        "price": 2.5,
+        "emoji": "🍟",
+        "bg": "#fff1c7",
+        "active": true,
+        "stock": null,
+        "groups": [],
+        "tags": [
+          "vegan"
+        ]
+      },
+      {
+        "id": "p514",
+        "categoryId": "c-sides",
+        "name": {
+          "en": "Garlic Bread",
+          "ar": "خبز بالثوم"
+        },
+        "desc": {
+          "en": "With mozzarella.",
+          "ar": "مع موزاريلا."
+        },
+        "price": 4,
+        "emoji": "🥖",
+        "bg": "#f6e7cc",
+        "active": true,
+        "stock": null,
+        "groups": [],
+        "tags": [
+          "vegetarian"
+        ],
+        "allergens": [
+          "gluten",
+          "dairy"
+        ]
+      },
+      {
+        "id": "p515",
+        "categoryId": "c-sides",
+        "name": {
+          "en": "Onion Rings",
+          "ar": "حلقات البصل"
+        },
+        "desc": {
+          "en": "Beer-battered style.",
+          "ar": "مقرمشة."
+        },
+        "price": 3.5,
+        "emoji": "🧅",
+        "bg": "#fdf0d0",
+        "active": true,
+        "stock": null,
+        "groups": [],
+        "tags": [
+          "vegetarian"
+        ],
+        "allergens": [
+          "gluten"
+        ]
+      },
+      {
+        "id": "p516",
+        "categoryId": "c-drinks",
+        "name": {
+          "en": "Soft Drink",
+          "ar": "مشروب غازي"
+        },
+        "desc": {
+          "en": "Cola, diet, orange.",
+          "ar": "كولا، دايت، برتقال."
+        },
+        "price": 1.5,
+        "emoji": "🥤",
+        "bg": "#e2ecf8",
+        "active": true,
+        "stock": null,
+        "groups": [],
+        "tags": []
+      },
+      {
+        "id": "p517",
+        "categoryId": "c-drinks",
+        "name": {
+          "en": "Milkshake",
+          "ar": "ميلك شيك"
+        },
+        "desc": {
+          "en": "Vanilla, chocolate or strawberry.",
+          "ar": "فانيليا، شوكولا أو فراولة."
+        },
+        "price": 4.5,
+        "emoji": "🥛",
+        "bg": "#fbe3ef",
+        "active": true,
+        "stock": null,
+        "groups": [],
+        "tags": [],
+        "allergens": [
+          "dairy"
+        ]
+      }
+    ],
+    "rewards": [
+      {
+        "id": "rw1",
+        "name": {
+          "en": "Free fries",
+          "ar": "بطاطا مجانية"
+        },
+        "cost": 80,
+        "kind": "item",
+        "value": 0,
+        "productId": "p513",
+        "emoji": "🍟",
+        "active": true
+      },
+      {
+        "id": "rw2",
+        "name": {
+          "en": "Free cheeseburger",
+          "ar": "تشيز برغر مجاني"
+        },
+        "cost": 250,
+        "kind": "item",
+        "value": 0,
+        "productId": "p508",
+        "emoji": "🍔",
+        "active": true
+      },
+      {
+        "id": "rw3",
+        "name": {
+          "en": "$5 off",
+          "ar": "خصم 5$"
+        },
+        "cost": 300,
+        "kind": "discount",
+        "value": 5,
+        "emoji": "💸",
+        "active": true
+      },
+      {
+        "id": "rw4",
+        "name": {
+          "en": "Free medium pizza",
+          "ar": "بيتزا وسط مجانية"
+        },
+        "cost": 500,
+        "kind": "item",
+        "value": 0,
+        "productId": "p505",
+        "emoji": "🍕",
+        "active": true
+      }
+    ],
+    "deals": [
+      {
+        "id": "d1",
+        "title": {
+          "en": "Tuesday: 2-for-1 pizzas",
+          "ar": "الثلاثاء: بيتزا 1+1"
+        },
+        "desc": {
+          "en": "Code TWOFOR1 on any 2 pizzas.",
+          "ar": "الرمز TWOFOR1 على أي بيتزا."
+        },
+        "code": "TWOFOR1",
+        "kind": "percent",
+        "value": 50,
+        "minOrder": 18,
+        "emoji": "🍕",
+        "bg": "#fde68a",
+        "active": true
+      },
+      {
+        "id": "d2",
+        "title": {
+          "en": "Free delivery over $15",
+          "ar": "توصيل مجاني فوق 15$"
+        },
+        "desc": {
+          "en": "Every day.",
+          "ar": "كل يوم."
+        },
+        "code": "FREEDEL",
+        "kind": "freeDelivery",
+        "value": 0,
+        "minOrder": 15,
+        "emoji": "🛵",
+        "bg": "#d9f99d",
+        "active": true
+      },
+      {
+        "id": "d3",
+        "title": {
+          "en": "Late night: $3 off",
+          "ar": "سهرة: خصم 3$"
+        },
+        "desc": {
+          "en": "After 10 pm.",
+          "ar": "بعد العاشرة مساءً."
+        },
+        "code": "LATE3",
+        "kind": "fixed",
+        "value": 3,
+        "minOrder": 12,
+        "emoji": "🌙",
+        "bg": "#c7d2fe",
+        "active": true,
+        "endsAt": 1795801195732
+      }
+    ],
+    "banners": [
+      {
+        "id": "b1",
+        "title": {
+          "en": "Meal deals from $11",
+          "ar": "وجبات كومبو من 11$"
+        },
+        "subtitle": {
+          "en": "Burger + side + drink.",
+          "ar": "برغر + طبق جانبي + مشروب."
+        },
+        "emoji": "🍔",
+        "bg": "#b91c1c"
+      },
+      {
+        "id": "b2",
+        "title": {
+          "en": "Pizza night for two",
+          "ar": "سهرة بيتزا لشخصين"
+        },
+        "subtitle": {
+          "en": "Save $7 tonight.",
+          "ar": "وفّر 7$ الليلة."
+        },
+        "emoji": "🍕",
+        "bg": "#7f1d1d"
+      },
+      {
+        "id": "b3",
+        "title": {
+          "en": "Every 8th order: free pizza",
+          "ar": "كل طلب ثامن: بيتزا مجانية"
+        },
+        "subtitle": {
+          "en": "Collect stamps automatically.",
+          "ar": "اجمع الأختام تلقائياً."
+        },
+        "emoji": "⭐",
+        "bg": "#1f2937"
+      }
+    ],
+    "staff": [
+      {
+        "id": "s1",
+        "name": "Rami (Manager)",
+        "role": "manager",
+        "pin": "1234",
+        "active": true
+      },
+      {
+        "id": "s2",
+        "name": "Lina",
+        "role": "cashier",
+        "pin": "1111",
+        "active": true
+      },
+      {
+        "id": "s3",
+        "name": "Omar",
+        "role": "kitchen",
+        "pin": "2222",
+        "active": true
+      }
+    ],
+    "riders": [
+      {
+        "id": "rd1",
+        "name": "Khaled M.",
+        "phone": "+961 76 300100",
+        "pin": "1001",
+        "active": true,
+        "onShift": true,
+        "shiftStart": 1795768795732
+      },
+      {
+        "id": "rd2",
+        "name": "Rami H.",
+        "phone": "+961 76 301211",
+        "pin": "1002",
+        "active": true,
+        "onShift": true,
+        "shiftStart": 1795768795732
+      },
+      {
+        "id": "rd3",
+        "name": "Ali S.",
+        "phone": "+961 76 302322",
+        "pin": "1003",
+        "active": true,
+        "onShift": false,
+        "shiftStart": 1795768795732
+      }
+    ]
+  }
+}

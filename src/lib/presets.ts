@@ -74,12 +74,6 @@ const milk = g('g-milk', 'Milk', 'الحليب', false, false, [
 const extras = g('g-extra', 'Extras', 'إضافات', false, true, [
   ['o-shot', 'Extra shot', 'جرعة إضافية', 0.6], ['o-van', 'Vanilla syrup', 'شراب الفانيليا', 0.4], ['o-car', 'Caramel syrup', 'شراب الكراميل', 0.4], ['o-cream', 'Whipped cream', 'كريمة مخفوقة', 0.4],
 ]);
-const clothSize = g('g-csize', 'Size', 'المقاس', true, false, [
-  ['o-xs', 'XS', 'XS', 0], ['o-sm', 'S', 'S', 0], ['o-md', 'M', 'M', 0], ['o-lgs', 'L', 'L', 0], ['o-xl', 'XL', 'XL', 0],
-]);
-const color3 = (a: [string, string], b: [string, string], c: [string, string]) =>
-  g('g-color', 'Color', 'اللون', true, false, [['o-c1', a[0], a[1], 0], ['o-c2', b[0], b[1], 0], ['o-c3', c[0], c[1], 0]]);
-const shoeSize = g('g-shoe', 'Size (EU)', 'المقاس', true, false, ['38', '39', '40', '41', '42', '43', '44'].map((s) => ['o-s' + s, s, s, 0] as [string, string, string, number]));
 
 const foodZones: DeliveryZone[] = [
   { id: 'z1', name: { en: 'Nearby (0–3 km)', ar: 'قريب (0–3 كم)' }, fee: 1.5, eta: 25 },
@@ -247,80 +241,163 @@ const cafe: Preset = {
   reservations: { slotMinutes: 60, capacityPerSlot: 4, maxParty: 8 },
 };
 
-// ── RETAIL ──────────────────────────────────────────────────────
-n = 300;
-const retail: Preset = {
-  industry: 'retail',
-  label: { en: 'Retail store', ar: 'متجر' },
-  emoji: '🛍️',
-  blurb: { en: 'Online shop, shipping, click & collect, VIP', ar: 'متجر إلكتروني، شحن، استلام من المتجر، VIP' },
-  sampleName: { en: 'Nova Boutique', ar: 'نوفا بوتيك' },
-  sampleTagline: { en: 'Everyday pieces, effortless style.', ar: 'قطع يومية بأناقة بسيطة.' },
-  logoEmoji: '✨',
-  palette: { primary: '#18181b', secondary: '#e9c46a' },
-  font: 'modern',
-  radius: 'sharp',
-  hours: ['10:00', '21:00'],
-  modules: { ...allOn, dineIn: false, loyaltyStamps: false, tips: false, tableQr: false },
+// ── BAKERY, PASTRY & DESSERTS ──────────────────────────────────
+n = 400;
+const cakeSize = g('g-cake', 'Size', 'الحجم', true, false, [['o-slice', 'Slice', 'قطعة', 0], ['o-6', 'Whole 6"', 'كاملة 6 إنش', 22], ['o-8', 'Whole 8"', 'كاملة 8 إنش', 32]]);
+const boxOf = g('g-box', 'Box', 'العلبة', true, false, [['o-b1', 'Single', 'قطعة', 0], ['o-b6', 'Box of 6', 'علبة 6', 9], ['o-b12', 'Box of 12', 'علبة 12', 19]]);
+const message = g('g-msg', 'Message on the cake', 'عبارة على الكيك', false, false, [['o-msg', 'Add a written message', 'أضف عبارة مكتوبة', 2]]);
+const bakery: Preset = {
+  industry: 'bakery',
+  label: { en: 'Bakery & desserts', ar: 'مخبز وحلويات' },
+  emoji: '🥐',
+  blurb: { en: 'Daily bakes, cakes to order, pickup & delivery', ar: 'مخبوزات يومية، كيك حسب الطلب، استلام وتوصيل' },
+  sampleName: { en: 'Golden Crumb', ar: 'غولدن كرامب' },
+  sampleTagline: { en: 'Baked at dawn. Gone by noon.', ar: 'يُخبز فجراً وينفد ظهراً.' },
+  logoEmoji: '🥐',
+  palette: { primary: '#9a3412', secondary: '#fcd9a8' },
+  font: 'classic',
+  radius: 'round',
+  hours: ['06:30', '21:00'],
+  modules: { ...allOn, dineIn: false, tableQr: false, tips: false, vipTiers: false },
   terms: {
     catalog: { en: 'Shop', ar: 'المتجر' },
-    reserve: { en: 'Book a styling visit', ar: 'احجز جلسة تنسيق' },
+    reserve: { en: 'Order a custom cake', ar: 'اطلب كيك خاص' },
     reserveCta: { en: 'Book', ar: 'احجز' },
-    party: { en: 'People', ar: 'الأشخاص' },
-    delivery: { en: 'Shipping', ar: 'شحن' },
-    kitchen: { en: 'Store', ar: 'المتجر' },
+    party: { en: 'Servings', ar: 'عدد الحصص' },
+    delivery: { en: 'Delivery', ar: 'توصيل' },
+    kitchen: { en: 'Bakery', ar: 'المخبز' },
   },
-  pointsPerUnit: 5,
-  stampsTarget: 6,
-  stampReward: { en: '$10 gift voucher', ar: 'قسيمة هدية بقيمة 10$' },
+  pointsPerUnit: 10,
+  stampsTarget: 10,
+  stampReward: { en: 'Free box of 6 pastries', ar: 'علبة 6 معجنات مجاناً' },
   stampRule: 'perOrder',
   stampCategoryIds: [],
-  zones: [
-    { id: 'z1', name: { en: 'Standard shipping', ar: 'شحن عادي' }, fee: 4, eta: 2880 },
-    { id: 'z2', name: { en: 'Express (next day)', ar: 'شحن سريع (اليوم التالي)' }, fee: 8, eta: 1440 },
-  ],
+  zones: foodZones,
   categories: [
-    { id: 'c-wom', name: { en: 'Women', ar: 'نساء' }, emoji: '👗' },
-    { id: 'c-men', name: { en: 'Men', ar: 'رجال' }, emoji: '👔' },
-    { id: 'c-shoe', name: { en: 'Shoes', ar: 'أحذية' }, emoji: '👟' },
-    { id: 'c-bag', name: { en: 'Bags', ar: 'حقائب' }, emoji: '👜' },
-    { id: 'c-acc', name: { en: 'Accessories', ar: 'إكسسوارات' }, emoji: '🕶️' },
+    { id: 'c-morning', name: { en: 'Morning bakes', ar: 'مخبوزات الصباح' }, emoji: '🌅', availableFrom: '06:30', availableTo: '12:00' },
+    { id: 'c-bread', name: { en: 'Breads', ar: 'خبز' }, emoji: '🍞' },
+    { id: 'c-cakes', name: { en: 'Cakes', ar: 'كيك' }, emoji: '🎂' },
+    { id: 'c-sweets', name: { en: 'Pastries & sweets', ar: 'معجنات وحلويات' }, emoji: '🧁' },
+    { id: 'c-drinks', name: { en: 'Drinks', ar: 'مشروبات' }, emoji: '☕' },
   ],
   products: [
-    p('c-wom', 'Linen Summer Dress', 'فستان صيفي من الكتان', 'Breathable linen, relaxed midi cut.', 'كتان مريح، قصة ميدي واسعة.', 49, '👗', '#f5ebe0', { popular: true, stock: 14, groups: [clothSize, color3(['Sand', 'رملي'], ['Olive', 'زيتي'], ['White', 'أبيض'])] }),
-    p('c-wom', 'Wide-leg Trousers', 'بنطال واسع', 'High waist, flowing fit.', 'خصر عالٍ وقصة انسيابية.', 39, '👖', '#e7e5e4', { stock: 9, groups: [clothSize, color3(['Black', 'أسود'], ['Beige', 'بيج'], ['Navy', 'كحلي'])] }),
-    p('c-wom', 'Silk Blouse', 'بلوزة حرير', 'Soft-touch satin, button front.', 'ساتان ناعم بأزرار أمامية.', 45, '👚', '#fce7f3', { isNew: true, stock: 6, groups: [clothSize, color3(['Ivory', 'عاجي'], ['Blush', 'وردي'], ['Black', 'أسود'])] }),
-    p('c-wom', 'Knit Cardigan', 'كارديغان محبوك', 'Chunky knit, oversized.', 'حياكة سميكة بمقاس واسع.', 42, '🧶', '#f3e8d8', { stock: 3, groups: [clothSize] }),
-    p('c-men', 'Oxford Shirt', 'قميص أوكسفورد', 'Crisp cotton, button-down collar.', 'قطن أنيق بياقة بأزرار.', 35, '👔', '#e0ecf7', { popular: true, stock: 20, groups: [clothSize, color3(['White', 'أبيض'], ['Sky', 'سماوي'], ['Pink', 'وردي'])] }),
-    p('c-men', 'Slim Chinos', 'بنطال تشينو', 'Stretch cotton, tapered leg.', 'قطن مرن بقصة ضيقة.', 39, '👖', '#ece3d3', { stock: 12, groups: [clothSize, color3(['Khaki', 'كاكي'], ['Navy', 'كحلي'], ['Olive', 'زيتي'])] }),
-    p('c-men', 'Piqué Polo', 'قميص بولو', 'Classic fit, breathable piqué.', 'قصة كلاسيكية وقماش مريح.', 29, '👕', '#e4f1e6', { stock: 18, groups: [clothSize, color3(['Navy', 'كحلي'], ['White', 'أبيض'], ['Green', 'أخضر'])] }),
-    p('c-shoe', 'White Leather Sneakers', 'حذاء رياضي جلد أبيض', 'Minimal, comfortable, goes with everything.', 'بسيط ومريح ويناسب كل شيء.', 69, '👟', '#f4f4f5', { popular: true, stock: 11, groups: [shoeSize] }),
-    p('c-shoe', 'Suede Loafers', 'حذاء لوفر شمواه', 'Hand-stitched, cushioned sole.', 'خياطة يدوية ونعل مريح.', 89, '🥿', '#efe1d1', { stock: 5, groups: [shoeSize] }),
-    p('c-shoe', 'Strappy Sandals', 'صندل بأشرطة', 'Soft leather straps, low block heel.', 'أشرطة جلد ناعمة وكعب منخفض.', 55, '👡', '#fbe7dd', { isNew: true, stock: 8, groups: [shoeSize] }),
-    p('c-bag', 'Canvas Tote', 'حقيبة قماشية', 'Roomy, with inner pocket.', 'واسعة مع جيب داخلي.', 35, '👜', '#f1ead9', { stock: 25 }),
-    p('c-bag', 'Leather Crossbody', 'حقيبة كروس جلد', 'Adjustable strap, gold hardware.', 'حزام قابل للتعديل وقطع ذهبية.', 59, '👛', '#f0dcd4', { popular: true, stock: 7, groups: [color3(['Tan', 'بني فاتح'], ['Black', 'أسود'], ['Burgundy', 'خمري'])] }),
-    p('c-acc', 'Classic Sunglasses', 'نظارات شمسية كلاسيكية', 'UV400 lenses, acetate frame.', 'عدسات UV400 وإطار أسيتات.', 25, '🕶️', '#e5e7eb', { stock: 30 }),
-    p('c-acc', 'Leather Belt', 'حزام جلد', 'Full-grain leather, brushed buckle.', 'جلد طبيعي وإبزيم مصقول.', 22, '🪢', '#eadfd3', { stock: 16 }),
-    p('c-acc', 'Silver Pendant', 'قلادة فضية', 'Sterling silver, 45 cm chain.', 'فضة استرليني مع سلسلة 45 سم.', 30, '📿', '#eef2f6', { isNew: true, stock: 10 }),
-    p('c-acc', 'Silk Scarf', 'وشاح حرير', 'Hand-rolled edges, printed.', 'أطراف ملفوفة يدوياً ومطبوع.', 28, '🧣', '#fde2e4', { stock: 0 }),
+    p('c-morning', 'Butter Croissant', 'كرواسون بالزبدة', 'Laminated with French butter, 27 layers.', 'بالزبدة الفرنسية، 27 طبقة.', 2.5, '🥐', '#fde9c7', { popular: true, stock: 18, groups: [boxOf], allergens: ['gluten', 'dairy', 'eggs'], calories: 280 }),
+    p('c-morning', 'Zaatar Manousheh', 'منقوشة زعتر', 'Stone-baked, extra olive oil.', 'على الصاج مع زيت زيتون إضافي.', 2, '🫓', '#eef0d4', { popular: true, allergens: ['gluten', 'sesame'], calories: 420 }),
+    p('c-morning', 'Cheese Kaak', 'كعك بالجبنة', 'Sesame kaak with akkawi cheese.', 'كعك بالسمسم مع جبنة عكاوي.', 3, '🥯', '#f8e7c9', { allergens: ['gluten', 'sesame', 'dairy'], calories: 390 }),
+    p('c-bread', 'Sourdough Loaf', 'رغيف خبز مخمّر', '36-hour ferment, crackling crust.', 'تخمير 36 ساعة وقشرة مقرمشة.', 6, '🍞', '#efdcc2', { stock: 9, allergens: ['gluten'], tags: ['vegan'] }),
+    p('c-bread', 'Baguette', 'باغيت', 'Classic French stick, baked every 2 hours.', 'باغيت فرنسي يُخبز كل ساعتين.', 2.5, '🥖', '#f3e3c5', { allergens: ['gluten'], tags: ['vegan'] }),
+    p('c-bread', 'Multigrain Loaf', 'خبز الحبوب', 'Seeds, oats and rye.', 'بذور وشوفان وجاودار.', 5.5, '🌾', '#e8dcc4', { allergens: ['gluten', 'sesame'], tags: ['healthy', 'vegan'] }),
+    p('c-cakes', 'Chocolate Fudge Cake', 'كيك الشوكولا', 'Three layers of dark chocolate ganache.', 'ثلاث طبقات من غاناش الشوكولا الداكنة.', 5.5, '🍫', '#ead7cc', { popular: true, groups: [cakeSize, message], allergens: ['gluten', 'dairy', 'eggs'], calories: 520, prepMinutes: 120 }),
+    p('c-cakes', 'Strawberry Shortcake', 'كيك الفراولة', 'Vanilla sponge, cream, fresh strawberries.', 'إسفنج فانيليا، كريمة وفراولة طازجة.', 5, '🍰', '#fde2e4', { isNew: true, groups: [cakeSize, message], allergens: ['gluten', 'dairy', 'eggs'], calories: 410, prepMinutes: 120 }),
+    p('c-cakes', 'Lotus Cheesecake', 'تشيز كيك لوتس', 'Biscoff base, creamy baked filling.', 'قاعدة لوتس وحشوة كريمية مخبوزة.', 6, '🧀', '#f6e5cf', { popular: true, groups: [cakeSize], allergens: ['gluten', 'dairy', 'eggs'], calories: 560 }),
+    p('c-sweets', 'Pistachio Maamoul', 'معمول بالفستق', 'Semolina, rose water, Aleppo pistachio.', 'سميد وماء ورد وفستق حلبي.', 1.5, '🥮', '#eaf0d6', { groups: [boxOf], allergens: ['gluten', 'nuts', 'dairy'], calories: 180 }),
+    p('c-sweets', 'Pain au Chocolat', 'كرواسون بالشوكولا', 'Two batons of dark chocolate.', 'قطعتان من الشوكولا الداكنة.', 3, '🍫', '#efdcd0', { groups: [boxOf], allergens: ['gluten', 'dairy', 'eggs'] }),
+    p('c-sweets', 'Cinnamon Roll', 'لفائف القرفة', 'Cream cheese frosting, still warm.', 'كريمة الجبن، دافئة.', 3.5, '🌀', '#f5e1c8', { isNew: true, allergens: ['gluten', 'dairy', 'eggs'], calories: 450 }),
+    p('c-sweets', 'Macarons', 'ماكرون', 'Assorted flavours.', 'نكهات متنوعة.', 1.8, '🍬', '#fbe3ef', { groups: [boxOf], allergens: ['nuts', 'eggs', 'dairy'], tags: ['glutenFree'] }),
+    p('c-drinks', 'Cappuccino', 'كابتشينو', 'Double shot, silky milk.', 'جرعة مزدوجة وحليب ناعم.', 3.5, '☕', '#efe2d6', { allergens: ['dairy'] }),
+    p('c-drinks', 'Fresh Orange Juice', 'عصير برتقال', 'Squeezed to order.', 'معصور عند الطلب.', 4, '🍊', '#ffe6c7', { tags: ['vegan', 'healthy'] }),
   ],
   rewards: [
-    { id: 'rw1', name: { en: '$5 off', ar: 'خصم 5$' }, cost: 150, kind: 'discount', value: 5, emoji: '💸', active: true },
-    { id: 'rw2', name: { en: '$12 off', ar: 'خصم 12$' }, cost: 300, kind: 'discount', value: 12, emoji: '💳', active: true },
-    { id: 'rw3', name: { en: 'Free sunglasses', ar: 'نظارات شمسية مجانية' }, cost: 500, kind: 'item', value: 0, productId: 'p313', emoji: '🕶️', active: true },
-    { id: 'rw4', name: { en: '$30 off', ar: 'خصم 30$' }, cost: 700, kind: 'discount', value: 30, emoji: '🎁', active: true },
+    { id: 'rw1', name: { en: 'Free croissant', ar: 'كرواسون مجاني' }, cost: 100, kind: 'item', value: 0, productId: 'p401', emoji: '🥐', active: true },
+    { id: 'rw2', name: { en: 'Free cinnamon roll', ar: 'لفائف قرفة مجانية' }, cost: 150, kind: 'item', value: 0, productId: 'p412', emoji: '🌀', active: true },
+    { id: 'rw3', name: { en: '$5 off your order', ar: 'خصم 5$' }, cost: 300, kind: 'discount', value: 5, emoji: '💸', active: true },
+    { id: 'rw4', name: { en: 'Free cake slice', ar: 'قطعة كيك مجانية' }, cost: 350, kind: 'item', value: 0, productId: 'p407', emoji: '🍰', active: true },
   ],
   deals: [
-    { id: 'd1', title: { en: 'New season: 15% off', ar: 'الموسم الجديد: خصم 15%' }, desc: { en: 'On everything. Code NEW15.', ar: 'على كل شيء. الرمز NEW15.' }, code: 'NEW15', kind: 'percent', value: 15, minOrder: 0, emoji: '🌸', bg: '#fbcfe8', active: true },
-    { id: 'd2', title: { en: 'Free shipping over $60', ar: 'شحن مجاني فوق 60$' }, desc: { en: 'Standard and express.', ar: 'عادي وسريع.' }, code: 'SHIPFREE', kind: 'freeDelivery', value: 0, minOrder: 60, emoji: '📦', bg: '#d9f99d', active: true },
-    { id: 'd3', title: { en: 'Flash sale: 25% off', ar: 'تخفيضات سريعة: خصم 25%' }, desc: { en: 'Ends tonight.', ar: 'ينتهي الليلة.' }, code: 'FLASH25', kind: 'percent', value: 25, minOrder: 50, emoji: '⚡', bg: '#fecaca', active: true, flashHours: 8 },
+    { id: 'd1', title: { en: 'Morning bundle: 6 croissants', ar: 'باقة الصباح: 6 كرواسون' }, desc: { en: 'Before 10 am, code MORNING6.', ar: 'قبل العاشرة، الرمز MORNING6.' }, code: 'MORNING6', kind: 'percent', value: 15, minOrder: 10, emoji: '🌅', bg: '#fde68a', active: true },
+    { id: 'd2', title: { en: 'Free delivery over $20', ar: 'توصيل مجاني فوق 20$' }, desc: { en: 'Fresh to your door.', ar: 'طازج حتى بابك.' }, code: 'FRESH20', kind: 'freeDelivery', value: 0, minOrder: 20, emoji: '🛵', bg: '#d9f99d', active: true },
+    { id: 'd3', title: { en: 'End of day: 30% off', ar: 'نهاية اليوم: خصم 30%' }, desc: { en: 'Today’s bakes, before we close.', ar: 'مخبوزات اليوم قبل الإغلاق.' }, code: 'LASTCALL', kind: 'percent', value: 30, minOrder: 0, emoji: '⚡', bg: '#fecaca', active: true, flashHours: 3 },
   ],
   banners: [
-    { id: 'b1', title: { en: 'The Summer Edit', ar: 'تشكيلة الصيف' }, subtitle: { en: 'Linen, light and easy.', ar: 'كتان، خفيف وسهل.' }, emoji: '☀️', bg: '#78716c' },
-    { id: 'b2', title: { en: 'VIP members shop first', ar: 'أعضاء VIP يتسوقون أولاً' }, subtitle: { en: 'Earn points on every purchase.', ar: 'اجمع النقاط مع كل عملية شراء.' }, emoji: '💎', bg: '#18181b' },
-    { id: 'b3', title: { en: 'Free styling session', ar: 'جلسة تنسيق مجانية' }, subtitle: { en: 'Book a visit with our stylist.', ar: 'احجز زيارة مع منسّقتنا.' }, emoji: '🪞', bg: '#57534e' },
+    { id: 'b1', title: { en: 'Out of the oven', ar: 'خرج للتو من الفرن' }, subtitle: { en: 'Croissants every morning from 6:30.', ar: 'كرواسون كل صباح من 6:30.' }, emoji: '🥐', bg: '#9a3412' },
+    { id: 'b2', title: { en: 'Cakes for every occasion', ar: 'كيك لكل مناسبة' }, subtitle: { en: 'Order 24 hours ahead.', ar: 'اطلب قبل 24 ساعة.' }, emoji: '🎂', bg: '#7c2d12' },
+    { id: 'b3', title: { en: 'Collect your 10th box free', ar: 'العلبة العاشرة مجاناً' }, subtitle: { en: 'One stamp per order.', ar: 'ختم مع كل طلب.' }, emoji: '🎁', bg: '#57534e' },
   ],
-  reservations: { slotMinutes: 45, capacityPerSlot: 2, maxParty: 4 },
+  reservations: { slotMinutes: 60, capacityPerSlot: 3, maxParty: 60 },
+};
+
+// ── PIZZERIA, BURGERS & FAST FOOD ──────────────────────────────
+n = 500;
+const pizzaSize = g('g-psize', 'Size', 'الحجم', true, false, [['o-ps', 'Small 8"', 'صغير', 0], ['o-pm', 'Medium 12"', 'وسط', 3], ['o-pl', 'Large 14"', 'كبير', 5]]);
+const crust = g('g-crust', 'Crust', 'العجينة', true, false, [['o-cl', 'Classic', 'كلاسيك', 0], ['o-th', 'Thin', 'رقيقة', 0], ['o-st', 'Cheese-stuffed', 'محشوة بالجبنة', 2]]);
+const toppings = g('g-top', 'Extra toppings', 'إضافات', false, true, [['o-t1', 'Mushrooms', 'فطر', 1], ['o-t2', 'Olives', 'زيتون', 1], ['o-t3', 'Jalapeños', 'هالبينو', 1], ['o-t4', 'Extra mozzarella', 'موزاريلا إضافية', 1.5], ['o-t5', 'Pepperoni', 'بيبروني', 2]]);
+toppings.max = 3;
+const sauces = g('g-sauce', 'Dips (up to 2)', 'صلصات (حتى 2)', false, true, [['o-s1', 'Garlic', 'ثوم', 0.5], ['o-s2', 'BBQ', 'باربيكيو', 0.5], ['o-s3', 'Ranch', 'رانش', 0.5], ['o-s4', 'Spicy mayo', 'مايونيز حار', 0.5]]);
+sauces.max = 2;
+const comboBurger = g('g-cb', 'Choose your burger', 'اختر البرغر', true, false, [['o-cb1', 'Classic beef', 'لحم كلاسيك', 0], ['o-cb2', 'Crispy chicken', 'دجاج مقرمش', 0], ['o-cb3', 'Double smash', 'سماش مزدوج', 2.5]]);
+const comboSide = g('g-cs', 'Choose a side', 'اختر طبقاً جانبياً', true, false, [['o-cs1', 'Fries', 'بطاطا', 0], ['o-cs2', 'Curly fries', 'بطاطا حلزونية', 1], ['o-cs3', 'Onion rings', 'حلقات البصل', 1]]);
+const comboDrink = g('g-cd', 'Choose a drink', 'اختر مشروباً', true, false, [['o-cd1', 'Cola', 'كولا', 0], ['o-cd2', 'Diet cola', 'دايت', 0], ['o-cd3', 'Lemonade', 'ليموناضة', 1]]);
+const fastfood: Preset = {
+  industry: 'fastfood',
+  label: { en: 'Pizzeria & fast food', ar: 'بيتزا ووجبات سريعة' },
+  emoji: '🍕',
+  blurb: { en: 'Meal deals, fast delivery, riders & cash', ar: 'وجبات كومبو، توصيل سريع، سائقون ونقود' },
+  sampleName: { en: 'Slice Station', ar: 'سلايس ستيشن' },
+  sampleTagline: { en: 'Hot, fast and at your door.', ar: 'ساخن وسريع وعلى بابك.' },
+  logoEmoji: '🍕',
+  palette: { primary: '#dc2626', secondary: '#facc15' },
+  font: 'friendly',
+  radius: 'round',
+  hours: ['11:00', '01:00'],
+  modules: { ...allOn, reservations: false, loyaltyStamps: true, vipTiers: false },
+  terms: {
+    catalog: { en: 'Menu', ar: 'القائمة' },
+    reserve: { en: 'Book a party order', ar: 'احجز طلب حفلة' },
+    reserveCta: { en: 'Book', ar: 'احجز' },
+    party: { en: 'Guests', ar: 'الضيوف' },
+    delivery: { en: 'Delivery', ar: 'توصيل' },
+    kitchen: { en: 'Kitchen', ar: 'المطبخ' },
+  },
+  pointsPerUnit: 10,
+  stampsTarget: 8,
+  stampReward: { en: 'Free medium pizza', ar: 'بيتزا وسط مجانية' },
+  stampRule: 'perOrder',
+  stampCategoryIds: [],
+  zones: foodZones,
+  categories: [
+    { id: 'c-deals', name: { en: 'Meal deals', ar: 'وجبات كومبو' }, emoji: '🔥' },
+    { id: 'c-pizza', name: { en: 'Pizza', ar: 'بيتزا' }, emoji: '🍕' },
+    { id: 'c-burg', name: { en: 'Burgers', ar: 'برغر' }, emoji: '🍔' },
+    { id: 'c-chicken', name: { en: 'Chicken', ar: 'دجاج' }, emoji: '🍗' },
+    { id: 'c-sides', name: { en: 'Sides', ar: 'مقبلات' }, emoji: '🍟' },
+    { id: 'c-drinks', name: { en: 'Drinks', ar: 'مشروبات' }, emoji: '🥤' },
+  ],
+  products: [
+    p('c-deals', 'Burger Meal', 'وجبة برغر', 'Any burger + side + drink.', 'أي برغر + طبق جانبي + مشروب.', 11, '🍔', '#fde7d4', { popular: true, compareAt: 14, groups: [comboBurger, comboSide, comboDrink], tags: ['bestseller'], allergens: ['gluten', 'dairy', 'sesame'] }),
+    p('c-deals', 'Pizza Night for 2', 'سهرة بيتزا لشخصين', '2 medium pizzas + garlic bread + 2 drinks.', 'بيتزا وسط ×2 + خبز بالثوم + مشروبان.', 24, '🍕', '#fee2e2', { popular: true, compareAt: 31, groups: [crust], allergens: ['gluten', 'dairy'] }),
+    p('c-deals', 'Family Bucket', 'دلو العائلة', '12 crispy pieces, 2 large fries, 4 dips.', '12 قطعة مقرمشة، بطاطا كبيرة ×2، 4 صلصات.', 29, '🪣', '#fef3c7', { compareAt: 36, allergens: ['gluten', 'eggs'] }),
+    p('c-pizza', 'Margherita', 'مارغريتا', 'Tomato, mozzarella, basil.', 'بندورة، موزاريلا، ريحان.', 9, '🍕', '#fee2e2', { groups: [pizzaSize, crust, toppings], tags: ['vegetarian'], allergens: ['gluten', 'dairy'], calories: 780 }),
+    p('c-pizza', 'Pepperoni', 'بيبروني', 'Double pepperoni, mozzarella.', 'بيبروني مزدوج وموزاريلا.', 11, '🍕', '#fecaca', { popular: true, groups: [pizzaSize, crust, toppings], allergens: ['gluten', 'dairy'], calories: 920 }),
+    p('c-pizza', 'BBQ Chicken', 'دجاج باربيكيو', 'Grilled chicken, red onion, BBQ.', 'دجاج مشوي، بصل أحمر، باربيكيو.', 12, '🍗', '#fde8d4', { groups: [pizzaSize, crust, toppings], allergens: ['gluten', 'dairy'] }),
+    p('c-pizza', 'Veggie Supreme', 'خضار سوبريم', 'Peppers, mushrooms, olives, onion.', 'فليفلة، فطر، زيتون، بصل.', 10.5, '🫑', '#e3f4d7', { groups: [pizzaSize, crust, toppings], tags: ['vegetarian'], allergens: ['gluten', 'dairy'] }),
+    p('c-burg', 'Classic Cheeseburger', 'تشيز برغر كلاسيك', 'Beef, cheddar, pickles, house sauce.', 'لحم، شيدر، مخلل، صلصة البيت.', 7.5, '🍔', '#fde7d4', { popular: true, groups: [burgerAddons], allergens: ['gluten', 'dairy', 'sesame'], calories: 640 }),
+    p('c-burg', 'Double Smash', 'سماش مزدوج', 'Two smashed patties, double cheese.', 'قطعتان مضغوطتان وجبنة مزدوجة.', 9.5, '🍔', '#fbd9c4', { isNew: true, groups: [burgerAddons], allergens: ['gluten', 'dairy', 'sesame'], calories: 910 }),
+    p('c-burg', 'Zinger Burger', 'زنجر برغر', 'Spicy crispy chicken, lettuce, mayo.', 'دجاج مقرمش حار، خس، مايونيز.', 7, '🌶️', '#fdecc8', { groups: [burgerAddons], tags: ['spicy'], allergens: ['gluten', 'eggs'] }),
+    p('c-chicken', 'Crispy Tenders (5)', 'أصابع دجاج (5)', 'Hand-breaded, with 2 dips.', 'مقرمشة مع صلصتين.', 7.5, '🍗', '#fdecc8', { groups: [sauces], tags: ['kids'], allergens: ['gluten', 'eggs'] }),
+    p('c-chicken', 'Hot Wings (8)', 'أجنحة حارة (8)', 'Buffalo sauce, ranch.', 'صلصة بافلو مع رانش.', 8, '🔥', '#fee2e2', { groups: [sauces], tags: ['spicy'], allergens: ['dairy'] }),
+    p('c-sides', 'Fries', 'بطاطا مقلية', 'Crispy, sea salt.', 'مقرمشة مع ملح البحر.', 2.5, '🍟', '#fff1c7', { tags: ['vegan'] }),
+    p('c-sides', 'Garlic Bread', 'خبز بالثوم', 'With mozzarella.', 'مع موزاريلا.', 4, '🥖', '#f6e7cc', { tags: ['vegetarian'], allergens: ['gluten', 'dairy'] }),
+    p('c-sides', 'Onion Rings', 'حلقات البصل', 'Beer-battered style.', 'مقرمشة.', 3.5, '🧅', '#fdf0d0', { tags: ['vegetarian'], allergens: ['gluten'] }),
+    p('c-drinks', 'Soft Drink', 'مشروب غازي', 'Cola, diet, orange.', 'كولا، دايت، برتقال.', 1.5, '🥤', '#e2ecf8'),
+    p('c-drinks', 'Milkshake', 'ميلك شيك', 'Vanilla, chocolate or strawberry.', 'فانيليا، شوكولا أو فراولة.', 4.5, '🥛', '#fbe3ef', { allergens: ['dairy'] }),
+  ],
+  rewards: [
+    { id: 'rw1', name: { en: 'Free fries', ar: 'بطاطا مجانية' }, cost: 80, kind: 'item', value: 0, productId: 'p513', emoji: '🍟', active: true },
+    { id: 'rw2', name: { en: 'Free cheeseburger', ar: 'تشيز برغر مجاني' }, cost: 250, kind: 'item', value: 0, productId: 'p508', emoji: '🍔', active: true },
+    { id: 'rw3', name: { en: '$5 off', ar: 'خصم 5$' }, cost: 300, kind: 'discount', value: 5, emoji: '💸', active: true },
+    { id: 'rw4', name: { en: 'Free medium pizza', ar: 'بيتزا وسط مجانية' }, cost: 500, kind: 'item', value: 0, productId: 'p505', emoji: '🍕', active: true },
+  ],
+  deals: [
+    { id: 'd1', title: { en: 'Tuesday: 2-for-1 pizzas', ar: 'الثلاثاء: بيتزا 1+1' }, desc: { en: 'Code TWOFOR1 on any 2 pizzas.', ar: 'الرمز TWOFOR1 على أي بيتزا.' }, code: 'TWOFOR1', kind: 'percent', value: 50, minOrder: 18, emoji: '🍕', bg: '#fde68a', active: true },
+    { id: 'd2', title: { en: 'Free delivery over $15', ar: 'توصيل مجاني فوق 15$' }, desc: { en: 'Every day.', ar: 'كل يوم.' }, code: 'FREEDEL', kind: 'freeDelivery', value: 0, minOrder: 15, emoji: '🛵', bg: '#d9f99d', active: true },
+    { id: 'd3', title: { en: 'Late night: $3 off', ar: 'سهرة: خصم 3$' }, desc: { en: 'After 10 pm.', ar: 'بعد العاشرة مساءً.' }, code: 'LATE3', kind: 'fixed', value: 3, minOrder: 12, emoji: '🌙', bg: '#c7d2fe', active: true, flashHours: 5 },
+  ],
+  banners: [
+    { id: 'b1', title: { en: 'Meal deals from $11', ar: 'وجبات كومبو من 11$' }, subtitle: { en: 'Burger + side + drink.', ar: 'برغر + طبق جانبي + مشروب.' }, emoji: '🍔', bg: '#b91c1c' },
+    { id: 'b2', title: { en: 'Pizza night for two', ar: 'سهرة بيتزا لشخصين' }, subtitle: { en: 'Save $7 tonight.', ar: 'وفّر 7$ الليلة.' }, emoji: '🍕', bg: '#7f1d1d' },
+    { id: 'b3', title: { en: 'Every 8th order: free pizza', ar: 'كل طلب ثامن: بيتزا مجانية' }, subtitle: { en: 'Collect stamps automatically.', ar: 'اجمع الأختام تلقائياً.' }, emoji: '⭐', bg: '#1f2937' },
+  ],
+  reservations: { slotMinutes: 60, capacityPerSlot: 2, maxParty: 80 },
 };
 
 tag(restaurant.products, {
@@ -332,12 +409,36 @@ tag(cafe.products, {
   p203: { tags: ['bestseller'] }, p205: { tags: ['bestseller'] }, p209: { tags: ['vegan', 'healthy'] }, p210: { tags: ['vegetarian', 'healthy', 'kids'] },
   p212: { tags: ['vegan', 'sugarFree'] }, p213: { tags: ['vegetarian'] }, p215: { tags: ['vegetarian'] }, p217: { tags: ['vegetarian'] }, p218: { tags: ['kids'] },
 });
-tag(retail.products, {
-  p301: { tags: ['bestseller', 'organic'], compareAt: 65 }, p303: { tags: ['limited'] }, p305: { tags: ['bestseller'] }, p307: { compareAt: 39, tags: ['eco'] },
-  p309: { compareAt: 119 }, p311: { tags: ['eco'] }, p313: { compareAt: 35 }, p316: { tags: ['limited'] },
+
+// Combos, breakfast hours and allergens for the restaurant and café menus
+n = 118;
+restaurant.categories.unshift({ id: 'c-meals', name: { en: 'Meals & combos', ar: 'وجبات كومبو' }, emoji: '🍱' });
+restaurant.products.push(
+  p('c-meals', 'Grill Combo for 2', 'كومبو مشاوي لشخصين', 'Mixed grill, 2 sides, hummus, 2 drinks.', 'مشاوي مشكلة، طبقان جانبيان، حمص، مشروبان.', 29, '🍢', '#fbe3c4', { popular: true, compareAt: 36, groups: [grillBread], tags: ['bestseller'], allergens: ['sesame'] }),
+  p('c-meals', 'Smash Burger Meal', 'وجبة سماش برغر', 'Smash burger, fries and a soft drink.', 'سماش برغر، بطاطا ومشروب غازي.', 11, '🍔', '#fde7d4', { compareAt: 13.5, groups: [burgerSide], allergens: ['gluten', 'dairy', 'sesame'] }),
+);
+tag(restaurant.products, {
+  p101: { allergens: ['gluten', 'dairy', 'sesame'], calories: 720, prepMinutes: 12 }, p102: { allergens: ['gluten', 'dairy', 'eggs'], calories: 810 },
+  p103: { allergens: ['gluten', 'eggs'], calories: 690 }, p104: { allergens: ['dairy'], calories: 640 }, p105: { calories: 980, prepMinutes: 20 },
+  p107: { allergens: ['gluten'], calories: 260 }, p108: { allergens: ['gluten', 'dairy', 'eggs', 'fish'], calories: 470 }, p109: { allergens: ['gluten'], calories: 180 },
+  p111: { allergens: ['dairy'] }, p112: { allergens: ['sesame'], calories: 330 }, p113: { allergens: ['gluten', 'dairy', 'eggs'], calories: 540 }, p114: { allergens: ['gluten', 'dairy', 'nuts'], calories: 610 },
+});
+n = 218;
+cafe.categories.unshift({ id: 'c-bfast', name: { en: 'Breakfast', ar: 'فطور' }, emoji: '🍳', availableFrom: '07:00', availableTo: '11:30' });
+cafe.products.push(
+  p('c-bfast', 'Shakshuka', 'شكشوكة', 'Eggs poached in spiced tomato, sourdough.', 'بيض مطهو في صلصة البندورة مع خبز.', 7.5, '🍳', '#fde2d0', { popular: true, tags: ['vegetarian'], allergens: ['eggs', 'gluten'], calories: 480 }),
+  p('c-bfast', 'Avocado Toast', 'توست الأفوكادو', 'Smashed avocado, feta, chili flakes.', 'أفوكادو مهروس، فيتا، رقائق الفلفل.', 8, '🥑', '#e3f4d7', { isNew: true, tags: ['vegetarian', 'healthy'], allergens: ['gluten', 'dairy'], calories: 420 }),
+  p('c-bfast', 'Labneh & Zaatar Plate', 'صحن لبنة وزعتر', 'Labneh, olives, veggies, warm bread.', 'لبنة، زيتون، خضار، خبز دافئ.', 6.5, '🫒', '#eef0d4', { tags: ['vegetarian'], allergens: ['dairy', 'gluten', 'sesame'] }),
+  p('c-bfast', 'Coffee & Croissant', 'قهوة وكرواسون', 'Any coffee with a butter croissant.', 'أي قهوة مع كرواسون بالزبدة.', 5, '🥐', '#f1e4d4', { compareAt: 6.6, groups: [coffeeSize, milk], tags: ['bestseller'], allergens: ['gluten', 'dairy'] }),
+);
+tag(cafe.products, {
+  p203: { allergens: ['dairy'], calories: 120 }, p204: { allergens: ['dairy'] }, p205: { allergens: ['dairy'], calories: 210 }, p207: { allergens: ['dairy'] },
+  p209: { allergens: ['dairy'] }, p210: { allergens: ['dairy'] }, p211: { allergens: ['dairy'] }, p213: { allergens: ['gluten', 'dairy', 'eggs'], calories: 280 },
+  p214: { allergens: ['gluten', 'dairy', 'eggs'] }, p215: { allergens: ['gluten', 'dairy', 'sesame'] }, p216: { allergens: ['gluten', 'dairy'] },
+  p217: { allergens: ['dairy', 'eggs', 'gluten'], calories: 490 }, p218: { allergens: ['gluten', 'dairy', 'eggs', 'nuts'] },
 });
 
-export const PRESETS: Record<Industry, Preset> = { restaurant, cafe, retail };
+export const PRESETS: Record<Industry, Preset> = { restaurant, cafe, bakery, fastfood };
 
 export const TAGS: Record<string, { en: string; ar: string; icon: string }> = {
   vegan: { en: 'Vegan', ar: 'نباتي صرف', icon: '🌱' },
@@ -353,15 +454,36 @@ export const TAGS: Record<string, { en: string; ar: string; icon: string }> = {
   eco: { en: 'Eco', ar: 'صديق للبيئة', icon: '♻️' },
 };
 
+export const ALLERGENS: Record<string, { en: string; ar: string; icon: string }> = {
+  gluten: { en: 'Gluten', ar: 'غلوتين', icon: '🌾' },
+  dairy: { en: 'Milk', ar: 'حليب', icon: '🥛' },
+  eggs: { en: 'Eggs', ar: 'بيض', icon: '🥚' },
+  nuts: { en: 'Nuts', ar: 'مكسرات', icon: '🥜' },
+  sesame: { en: 'Sesame', ar: 'سمسم', icon: '⚪' },
+  soy: { en: 'Soy', ar: 'صويا', icon: '🫘' },
+  fish: { en: 'Fish', ar: 'سمك', icon: '🐟' },
+  shellfish: { en: 'Shellfish', ar: 'قشريات', icon: '🦐' },
+  mustard: { en: 'Mustard', ar: 'خردل', icon: '🟡' },
+};
+
+/** Delivery areas used when the business is in Lebanon. */
+export const LEBANON_ZONES = [
+  { id: 'z1', name: { en: 'Hamra & Ras Beirut', ar: 'الحمرا ورأس بيروت' }, fee: 1.5, eta: 25 },
+  { id: 'z2', name: { en: 'Achrafieh & Gemmayzeh', ar: 'الأشرفية والجميزة' }, fee: 2, eta: 30 },
+  { id: 'z3', name: { en: 'Verdun & Mar Elias', ar: 'فردان ومار الياس' }, fee: 2, eta: 30 },
+  { id: 'z4', name: { en: 'Jnah & Bir Hassan', ar: 'الجناح وبئر حسن' }, fee: 3, eta: 40, minOrder: 12 },
+  { id: 'z5', name: { en: 'Dekwaneh & Sin el Fil', ar: 'الدكوانة وسن الفيل' }, fee: 4, eta: 45, minOrder: 15 },
+];
+
 export const BRANCH_NAMES: L[] = [
   { en: 'Downtown', ar: 'وسط المدينة' }, { en: 'Mall branch', ar: 'فرع المول' }, { en: 'Seaside', ar: 'الواجهة البحرية' },
   { en: 'University', ar: 'الجامعة' }, { en: 'Airport road', ar: 'طريق المطار' }, { en: 'Uptown', ar: 'أعلى المدينة' },
 ];
 
 export const COMING_SOON: { label: L; emoji: string }[] = [
-  { label: { en: 'Salon & spa', ar: 'صالون وسبا' }, emoji: '💇' },
-  { label: { en: 'Clinic', ar: 'عيادة' }, emoji: '🩺' },
-  { label: { en: 'Gym & studio', ar: 'نادي رياضي' }, emoji: '🏋️' },
+  { label: { en: 'Juice & smoothie bar', ar: 'عصائر وسموذي' }, emoji: '🥤' },
+  { label: { en: 'Cloud kitchen', ar: 'مطبخ سحابي' }, emoji: '👩‍🍳' },
+  { label: { en: 'Catering', ar: 'تموين' }, emoji: '🍱' },
 ];
 
 export const DEFAULT_TIERS = [

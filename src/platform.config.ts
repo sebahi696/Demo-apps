@@ -7,8 +7,8 @@ export const PLATFORM = {
   /** Your agency / product name shown on the landing page and questionnaire */
   name: 'Demo Studio',
   tagline: {
-    en: 'See your business app working — before we build it.',
-    ar: 'شاهد تطبيق عملك يعمل — قبل أن نبنيه.',
+    en: 'See your restaurant’s app working — before you pay a cent.',
+    ar: 'شاهد تطبيق مطعمك يعمل — قبل أن تدفع أي شيء.',
   },
   /** WhatsApp number for the "Talk to us" buttons (digits only, with country code) */
   salesWhatsApp: '96100000000',

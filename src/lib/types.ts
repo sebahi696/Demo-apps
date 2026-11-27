@@ -8,7 +8,7 @@ export type Lang = 'en' | 'ar';
 /** Localized text. `ar` is optional — falls back to `en`. */
 export type L = { en: string; ar?: string };
 
-export type Industry = 'restaurant' | 'cafe' | 'retail';
+export type Industry = 'restaurant' | 'cafe' | 'bakery' | 'fastfood';
 export type Role = 'customer' | 'staff' | 'rider' | 'owner';
 
 export type ModuleKey =
@@ -46,6 +46,7 @@ export interface DeliveryZone {
   name: L;
   fee: number;
   eta: number; // minutes
+  minOrder?: number; // overrides the global minimum for this zone
 }
 
 export interface Branch {
@@ -57,6 +58,18 @@ export interface Branch {
 
 /** Product badges customers can filter by. */
 export type ProductTag = 'vegan' | 'vegetarian' | 'glutenFree' | 'spicy' | 'healthy' | 'kids' | 'sugarFree' | 'organic' | 'bestseller' | 'limited' | 'eco';
+
+export type HomeSection = 'banners' | 'loyalty' | 'quick' | 'active' | 'deals' | 'reorder' | 'categories' | 'favorites' | 'popular' | 'new' | 'info';
+
+export interface AppUi {
+  theme: 'light' | 'dark';
+  header: 'solid' | 'gradient' | 'image';
+  menuLayout: 'list' | 'grid' | 'large';
+  cardStyle: 'elevated' | 'outlined' | 'flat';
+  sections: HomeSection[]; // order and visibility of the home screen
+  coverEmoji: string;
+  showCalories: boolean;
+}
 
 export interface DemoConfig {
   id: string;
@@ -129,6 +142,8 @@ export interface DemoConfig {
     maxParty: number;
     daysAhead: number;
   };
+  /** How the customer app looks — every option is editable in Owner → App design */
+  ui: AppUi;
   lead: {
     ownerName: string;
     email: string;
@@ -142,6 +157,7 @@ export interface OptionGroup {
   name: L;
   required: boolean;
   multi: boolean;
+  max?: number; // for multi groups: most a customer can pick
   options: { id: string; name: L; priceDelta: number }[];
 }
 
@@ -149,6 +165,9 @@ export interface Category {
   id: string;
   name: L;
   emoji: string;
+  /** Only orderable between these times, e.g. breakfast 07:00–11:30 */
+  availableFrom?: string;
+  availableTo?: string;
 }
 
 export interface Product {
@@ -157,8 +176,11 @@ export interface Product {
   name: L;
   desc: L;
   price: number;
-  compareAt?: number; // original price when on sale
+  compareAt?: number; // original price when on sale / combo "worth"
   tags: ProductTag[];
+  allergens?: string[];
+  calories?: number;
+  prepMinutes?: number;
   emoji: string;
   bg: string;
   image?: string;
@@ -283,6 +305,15 @@ export interface Order {
   rating?: number;
   review?: string;
   reply?: string;
+  scheduledFor?: number; // pre-order time
+}
+
+export interface ServiceRequest {
+  id: string;
+  table: string;
+  kind: 'waiter' | 'bill' | 'water' | 'cutlery';
+  at: number;
+  done: boolean;
 }
 
 export type LostReason = 'busy' | 'soldOut' | 'outsideArea' | 'closed' | 'customer' | 'other';
@@ -433,6 +464,7 @@ export interface DemoData {
   giftCards: GiftCard[];
   walletTx: WalletTx[];
   riders: Rider[];
+  serviceRequests: ServiceRequest[];
   collections: CashCollection[];
   settlements: Settlement[];
   branchId?: string; // the demo customer's chosen branch

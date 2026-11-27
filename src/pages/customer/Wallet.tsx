@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Wallet as WalletIcon, Gift, Plus, ArrowDownLeft, ArrowUpRight, Copy } from 'lucide-react';
 import { useDemo } from '../../lib/demo';
+import { CLIENT_MODE } from '../../lib/client';
 import { toast } from '../../lib/store';
 import { buyGiftCard, me, redeemGiftCard, topUp, track } from '../../lib/ops';
 import type { GiftCard } from '../../lib/types';
@@ -83,7 +84,7 @@ export function Wallet() {
         }}>
           <Field label={tr('Gift card code', 'رمز بطاقة الهدية')}><Input value={codeIn} onChange={(e) => setCodeIn(e.target.value.toUpperCase())} placeholder="GIFT-XXXXXX" className="font-mono" dir="ltr" /></Field>
           <Button block size="lg" className="mt-3">{tr('Redeem', 'استرداد')}</Button>
-          {data.giftCards.filter((g) => !g.redeemedBy).length > 0 && (
+          {!CLIENT_MODE && data.giftCards.filter((g) => !g.redeemedBy).length > 0 && (
             <div className="mt-3 text-xs text-gray-500">{tr('Demo shortcut:', 'اختصار التجربة:')} {data.giftCards.filter((g) => !g.redeemedBy).slice(0, 3).map((g) => (
               <button type="button" key={g.code} onClick={() => setCodeIn(g.code)} className="font-mono font-bold text-brand me-2" dir="ltr">{g.code}</button>
             ))}</div>

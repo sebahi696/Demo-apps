@@ -268,16 +268,17 @@ export function totals(d: Demo, fulfillment: Fulfillment, zoneId?: string, tipPc
   const tax = f.taxRate ? round2(f.taxIncluded ? (taxable * f.taxRate) / (100 + f.taxRate) : (taxable * f.taxRate) / 100) : 0;
   const tip = d.config.modules.tips ? round2((taxable * tipPct) / 100) : 0;
   const total = round2(taxable + deliveryFee + (f.taxIncluded ? 0 : tax) + tip);
+  const minDel = zone?.minOrder ?? f.minOrder;
   const minOrderError =
-    fulfillment === 'delivery' && f.minOrder > 0 && subtotal < f.minOrder
-      ? { en: `Minimum for delivery is ${f.minOrder}`, ar: `الحد الأدنى للتوصيل ${f.minOrder}` }
+    fulfillment === 'delivery' && minDel > 0 && subtotal < minDel
+      ? { en: `Minimum for delivery to this area is ${minDel}`, ar: `الحد الأدنى للتوصيل لهذه المنطقة ${minDel}` }
       : undefined;
   return { subtotal, discount, deliveryFee, tax, tip, total, couponError, couponLabel, voucher, minOrderError };
 }
 
 export function placeOrder(
   d: Demo,
-  input: { fulfillment: Fulfillment; zoneId?: string; address?: string; table?: string; payment: PaymentKey; note?: string; tipPct?: number },
+  input: { fulfillment: Fulfillment; zoneId?: string; address?: string; table?: string; payment: PaymentKey; note?: string; tipPct?: number; scheduledFor?: number },
 ): Order {
   const t = totals(d, input.fulfillment, input.zoneId, input.tipPct ?? 0);
   const c = me(d);
@@ -305,7 +306,7 @@ export function placeOrder(
     fulfillment: input.fulfillment, zoneId: input.zoneId, address: input.address, table: input.table,
     payment: input.payment, paid: input.payment !== 'cash', status: 'pending', history: [{ status: 'pending', at: now }],
     createdAt: now, updatedAt: now, couponCode: t.couponLabel ? d.data.cart.couponCode : undefined, voucherId: t.voucher?.id,
-    note: input.note, pointsEarned: 0, stampsEarned: 0, tip: t.tip, branchId: d.data.branchId ?? d.config.branches[0]?.id,
+    note: input.note, pointsEarned: 0, stampsEarned: 0, tip: t.tip, scheduledFor: input.scheduledFor, branchId: d.data.branchId ?? d.config.branches[0]?.id,
   };
   d.data.orders.unshift(o);
   d.data.cart = { items: [], table: d.data.cart.table };
@@ -327,14 +328,13 @@ export const nextStatus = (o: Order): OrderStatus | undefined => {
 };
 
 export function statusLabel(s: OrderStatus, industry: Industry, f?: Fulfillment): L {
-  const retail = industry === 'retail';
   switch (s) {
     case 'pending': return { en: 'Waiting', ar: 'بانتظار القبول' };
     case 'accepted': return { en: 'Accepted', ar: 'تم القبول' };
-    case 'preparing': return retail ? { en: 'Packing', ar: 'قيد التجهيز' } : { en: 'Preparing', ar: 'قيد التحضير' };
+    case 'preparing': return industry === 'bakery' ? { en: 'Packing', ar: 'قيد التجهيز' } : { en: 'Preparing', ar: 'قيد التحضير' };
     case 'ready':
       return f === 'delivery' ? { en: 'Ready', ar: 'جاهز' } : f === 'dineIn' ? { en: 'Served', ar: 'تم التقديم' } : { en: 'Ready for pickup', ar: 'جاهز للاستلام' };
-    case 'outForDelivery': return retail ? { en: 'Shipped', ar: 'تم الشحن' } : { en: 'On the way', ar: 'في الطريق' };
+    case 'outForDelivery': return { en: 'On the way', ar: 'في الطريق' };
     case 'completed': return { en: 'Completed', ar: 'مكتمل' };
     case 'cancelled': return { en: 'Cancelled', ar: 'ملغى' };
   }
@@ -503,6 +503,23 @@ export function sendCampaign(d: Demo, title: L, body: L, audience: Audience, off
 
 export const productAvailable = (p: Product, branchId?: string) =>
   p.active && (p.stock === null || p.stock > 0) && !(branchId && p.soldOutAt?.includes(branchId));
+
+/** Is a time-limited category (e.g. breakfast) open right now? */
+export function categoryOpen(c: { availableFrom?: string; availableTo?: string } | undefined, at = new Date()) {
+  if (!c?.availableFrom || !c.availableTo) return true;
+  const mins = (t: string) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+  const now = at.getHours() * 60 + at.getMinutes();
+  const a = mins(c.availableFrom);
+  const b = mins(c.availableTo);
+  return a <= b ? now >= a && now < b : now >= a || now < b;
+}
+
+// ── Table service ──────────────────────────────────────────────
+export function requestService(d: Demo, table: string, kind: 'waiter' | 'bill' | 'water' | 'cutlery') {
+  d.data.serviceRequests.unshift({ id: uid('sr'), table, kind, at: Date.now(), done: false });
+  if (d.data.serviceRequests.length > 40) d.data.serviceRequests.length = 40;
+  track(d, 'tableService');
+}
 
 /** Results of an offer: how many used it, the sales it brought and what it cost. */
 export function campaignResults(d: Demo, codeStr?: string) {

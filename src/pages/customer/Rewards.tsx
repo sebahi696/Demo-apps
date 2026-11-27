@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { QrCode, Ticket, History, Crown, Store } from 'lucide-react';
 import { useDemo } from '../../lib/demo';
+import { CLIENT_MODE } from '../../lib/client';
 import { toast } from '../../lib/store';
 import { claimStatic, claimToken, me, parseScan, redeemReward, tierOf } from '../../lib/ops';
 import type { Voucher } from '../../lib/types';
@@ -194,9 +195,9 @@ export function ScanEarn() {
         <>
           <p className="text-gray-600 mb-3">{tr('Scan the QR code shown by the staff, or the one at the counter.', 'امسح رمز QR الذي يعرضه الموظف، أو الموجود على الكاشير.')}</p>
           <Scanner onResult={handle} />
-          <div className="mt-4 rounded-app bg-amber-50 border border-amber-200 p-3 text-sm text-amber-900">
+          {!CLIENT_MODE && <div className="mt-4 rounded-app bg-amber-50 border border-amber-200 p-3 text-sm text-amber-900">
             💡 {tr('Testing on one device? Switch to Staff → “Award points” to create a code, then tap “Simulate customer scan”.', 'تجرّب على جهاز واحد؟ انتقل إلى الموظف ← "منح النقاط" لإنشاء رمز، ثم اضغط "محاكاة مسح الزبون".')}
-          </div>
+          </div>}
           {cfg.modules.staticQr && (
             <Button block variant="outline" className="mt-3" icon={<Store size={18} />} onClick={() => setStaticOpen(true)}>{tr('I scanned the counter QR', 'مسحت رمز QR على الكاشير')}</Button>
           )}

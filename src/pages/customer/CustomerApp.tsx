@@ -2,6 +2,7 @@ import { useEffect, useRef, type ReactNode } from 'react';
 import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { Home as HomeIcon, ShoppingBag, Gift, Receipt, User, CalendarDays, ArrowLeft, ShoppingCart } from 'lucide-react';
 import { useDemo } from '../../lib/demo';
+import { CLIENT_MODE } from '../../lib/client';
 import { toast } from '../../lib/store';
 import { totals } from '../../lib/ops';
 import { shareLink } from '../../lib/share';
@@ -30,12 +31,12 @@ export default function CustomerApp() {
           <div className="font-extrabold text-xl mt-1">{tl(cfg.business.name)}</div>
           <p className="text-sm text-gray-600 mt-2">{tr('This is exactly what your customers will see. Tap around — everything works.', 'هذا تماماً ما سيراه زبائنك. جرّب كل شيء — كل شيء يعمل.')}</p>
           <div className="mt-4 rounded-2xl bg-white p-3 text-center">
-            <QRCode value={shareLink(cfg)} size={150} className="mx-auto" />
-            <div className="text-xs text-gray-500 mt-2">{tr('Scan to try it on your phone', 'امسح لتجربته على هاتفك')}</div>
+            <QRCode value={CLIENT_MODE ? location.origin + location.pathname : shareLink(cfg)} size={150} className="mx-auto" />
+            <div className="text-xs text-gray-500 mt-2">{CLIENT_MODE ? tr('Scan to order on your phone', 'امسح للطلب من هاتفك') : tr('Scan to try it on your phone', 'امسح لتجربته على هاتفك')}</div>
           </div>
         </div>
       </aside>
-      <div className="relative h-full w-full md:h-[min(844px,100%)] md:w-[400px] md:rounded-[44px] md:border-[10px] md:border-gray-900 md:shadow-2xl overflow-hidden bg-gray-50 flex flex-col" key={lang}>
+      <div className={cx('relative h-full w-full md:h-[min(844px,100%)] md:w-[400px] md:rounded-[44px] md:border-[10px] md:border-gray-900 md:shadow-2xl overflow-hidden bg-gray-50 flex flex-col', cfg.ui.theme === 'dark' && 'app-dark', 'cards-' + cfg.ui.cardStyle)} key={lang}>
         <div className="flex-1 min-h-0 relative">
           <Routes>
             <Route index element={<Home />} />

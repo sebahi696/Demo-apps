@@ -12,6 +12,7 @@ import { shareLink } from '../lib/share';
 import { claimToken, nextStatus, setOrderStatus } from '../lib/ops';
 import { DAY, isIOS, isStandalone } from '../lib/utils';
 import { PLATFORM } from '../platform.config';
+import { CLIENT_MODE, CLIENT_PKG } from '../lib/client';
 import type { Role } from '../lib/types';
 import { Button, Modal, Toggle, cx } from '../components/ui';
 import { QRCode } from '../components/qr';
@@ -42,6 +43,9 @@ export default function DemoLayout() {
   );
 }
 
+/** True inside the App design live preview (an iframe): hide the demo chrome. */
+export const EMBEDDED = typeof window !== 'undefined' && window.self !== window.top;
+
 let deferredPrompt: any = null;
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
@@ -54,6 +58,7 @@ function DemoShell() {
   const [params, setParams] = useSearchParams();
   const setLang = useStore((s) => s.setLang);
   const [tourOpen, setTourOpen] = useState(false);
+  const [, setGateTick] = useState(0);
   const role: Role = loc.pathname.includes('/staff') ? 'staff' : loc.pathname.includes('/rider') ? 'rider' : loc.pathname.includes('/owner') ? 'owner' : 'customer';
 
   useEffect(() => {
@@ -96,11 +101,14 @@ function DemoShell() {
 
   useSimulation();
 
-  const expired = cfg.expiresAt < Date.now();
+  const expired = !CLIENT_MODE && cfg.expiresAt < Date.now();
+
+  if (CLIENT_MODE && role !== 'customer' && !EMBEDDED && sessionStorage.getItem('gate-' + role) !== '1') return <ClientGate role={role} onOk={() => setGateTick((x) => x + 1)} />;
 
   return (
     <div className="h-[100dvh] flex flex-col bg-gray-100">
-      <DemoBar role={role} onTour={() => setTourOpen((v) => !v)} />
+      {!EMBEDDED && !CLIENT_MODE && <DemoBar role={role} onTour={() => setTourOpen((v) => !v)} />}
+      {!EMBEDDED && CLIENT_MODE && role !== 'customer' && <ClientBar role={role} />}
       <div className={cx('flex-1 min-h-0 relative transition-[padding]', tourOpen && !expired && 'xl:pe-[360px]')}>
         {expired ? (
           <Expired />
@@ -114,7 +122,7 @@ function DemoShell() {
             <Route path="*" element={<Navigate to="app" replace />} />
           </Routes>
         )}
-        {tourOpen && !expired && <TourPanel onClose={() => setTourOpen(false)} />}
+        {tourOpen && !expired && !EMBEDDED && !CLIENT_MODE && <TourPanel onClose={() => setTourOpen(false)} />}
       </div>
     </div>
   );
@@ -441,6 +449,65 @@ function Expired() {
         </div>
         <PlanSummary demo={demo} showCta={false} />
       </div>
+    </div>
+  );
+}
+
+/** Client builds: staff, riders and the owner sign in with a PIN. */
+function ClientGate({ role, onOk }: { role: Role; onOk: () => void }) {
+  const { data, tr, tl, cfg } = useDemo();
+  const [v, setV] = useState('');
+  const [, force] = useState(0);
+  const ok = (pin: string) =>
+    role === 'owner' ? pin === CLIENT_PKG!.ownerPin
+    : role === 'rider' ? data.riders.some((r) => r.active && r.pin === pin)
+    : data.staff.some((s) => s.active && s.pin === pin) || pin === CLIENT_PKG!.ownerPin;
+  useEffect(() => {
+    if (v.length < 4) return;
+    if (ok(v)) { sessionStorage.setItem('gate-' + role, '1'); force((x) => x + 1); onOk(); }
+    else { toast(tr('Wrong PIN', 'رمز خاطئ'), 'error'); setV(''); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [v]);
+  const title = { owner: tr('Owner panel', 'لوحة المالك'), staff: tr('Staff', 'الموظفون'), rider: tr('Rider app', 'تطبيق السائق'), customer: '' }[role];
+  return (
+    <div className="h-[100dvh] grid place-items-center bg-gray-950 p-6 text-white">
+      <div className="w-full max-w-xs text-center">
+        <div className="h-16 w-16 mx-auto rounded-2xl bg-brand text-onbrand grid place-items-center text-3xl overflow-hidden">{cfg.business.logo ? <img src={cfg.business.logo} className="h-full w-full object-cover" alt="" /> : cfg.business.logoEmoji}</div>
+        <div className="mt-3 text-white/60 text-sm">{tl(cfg.business.name)}</div>
+        <h1 className="text-xl font-bold">{title}</h1>
+        <div className="flex justify-center gap-3 my-5">{[0, 1, 2, 3].map((i) => <span key={i} className={cx('h-4 w-4 rounded-full', i < v.length ? 'bg-white' : 'bg-white/20')} />)}</div>
+        <div className="grid grid-cols-3 gap-2" dir="ltr">
+          {['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫'].map((k) => (
+            <button key={k} disabled={!k} onClick={() => setV((x) => (k === '⌫' ? x.slice(0, -1) : (x + k).slice(0, 4)))} className={cx('h-14 rounded-2xl text-xl font-bold', k ? 'bg-white/10 active:bg-white/20' : '')}>{k}</button>
+          ))}
+        </div>
+        <a href="#/" className="block text-white/40 text-sm mt-6">{tr('Back to the app', 'العودة إلى التطبيق')}</a>
+      </div>
+    </div>
+  );
+}
+
+function ClientBar({ role }: { role: Role }) {
+  const { cfg, tr, tl, base, lang } = useDemo();
+  const nav = useNavigate();
+  const setLang = useStore((s) => s.setLang);
+  const roles: { r: Role; label: string }[] = [
+    { r: 'staff', label: tr('Orders', 'الطلبات') },
+    ...(cfg.modules.delivery ? [{ r: 'rider' as Role, label: tr('Rider', 'السائق') }] : []),
+    { r: 'owner', label: tr('Owner', 'المالك') },
+  ];
+  return (
+    <div className="shrink-0 bg-gray-950 text-white h-12 flex items-center gap-2 px-3">
+      <span className="font-semibold truncate">{tl(cfg.business.name)}</span>
+      <div className="flex-1 flex justify-center">
+        <div className="flex rounded-full bg-white/10 p-0.5">
+          {roles.map((x) => (
+            <button key={x.r} onClick={() => nav(`${base}/${x.r}`)} className={cx('rounded-full px-3.5 h-8 text-sm font-semibold', role === x.r ? 'bg-white text-gray-900' : 'text-white/70')}>{x.label}</button>
+          ))}
+        </div>
+      </div>
+      <button onClick={() => setLang(lang === 'en' ? 'ar' : 'en')} className="h-9 px-2 rounded-full hover:bg-white/10 text-sm font-bold">{lang === 'en' ? 'ع' : 'EN'}</button>
+      <button onClick={() => { ['owner', 'staff', 'rider'].forEach((r) => sessionStorage.removeItem('gate-' + r)); nav(`${base}/app`); }} className="h-9 px-3 rounded-full hover:bg-white/10 text-sm">{tr('Lock', 'قفل')}</button>
     </div>
   );
 }

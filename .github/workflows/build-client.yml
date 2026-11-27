@@ -1,0 +1,36 @@
+# Build a client's own PWA without installing anything locally.
+# Actions → "Build client app" → Run workflow → type the client slug (clients/<slug>.json).
+# Download the zip from the run's "Artifacts" and upload it to the client's host.
+name: Build client app
+
+on:
+  workflow_dispatch:
+    inputs:
+      client:
+        description: 'Client slug (file name in clients/, without .json)'
+        required: true
+      domain:
+        description: 'Custom domain (optional, writes CNAME)'
+        required: false
+      base:
+        description: 'Base path (/ for a domain, /repo-name/ for GitHub Pages)'
+        required: false
+        default: '/'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: node scripts/build-client.mjs "${{ inputs.client }}" --base="${{ inputs.base }}" ${{ inputs.domain && format('--domain={0}', inputs.domain) || '' }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.client }}-pwa
+          path: |
+            dist-clients/${{ inputs.client }}
+            dist-clients/${{ inputs.client }}.capacitor.config.json

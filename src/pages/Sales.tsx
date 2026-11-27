@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Copy, Trash2, CalendarPlus, ExternalLink, FileText, Plus, Download, Lock, RefreshCw, Smartphone, Cloud, CloudOff } from 'lucide-react';
+import { ArrowLeft, Copy, Trash2, CalendarPlus, ExternalLink, FileText, Plus, Download, Lock, RefreshCw, Smartphone, Cloud, CloudOff, PackageOpen } from 'lucide-react';
+import { downloadPackage } from '../lib/client';
 import { useStore, toast } from '../lib/store';
 import { useI18n } from '../lib/i18n';
 import { PRESETS } from '../lib/presets';
@@ -206,6 +207,11 @@ export default function Sales() {
                     <Button size="sm" variant="outline" icon={<Copy size={14} />} onClick={async () => { await navigator.clipboard.writeText(shareLink(c)); toast(tr('Share link copied — send it to the client', 'تم نسخ الرابط — أرسله للعميل')); }}>{tr('Link', 'رابط')}</Button>
                     <Button size="sm" variant="outline" icon={<FileText size={14} />} onClick={() => setPlan(r)}>{tr('Plan', 'الخطة')}</Button>
                     <Button size="sm" variant="outline" icon={<CalendarPlus size={14} />} onClick={() => extend(r)}>+7</Button>
+                    <Button size="sm" variant="outline" icon={<PackageOpen size={14} />} title={tr('Download the client package for the final build', 'نزّل حزمة العميل للبناء النهائي')} onClick={() => {
+                      const d = r.local ? r.demo : { config: migrateConfig(structuredClone(r.demo.config)), data: buildData(migrateConfig(structuredClone(r.demo.config))) };
+                      const s = downloadPackage(d);
+                      toast(tr(`${s}.json downloaded${r.local ? '' : ' (menu from the template — client edits stay on their device)'}`, `تم تنزيل ${s}.json`));
+                    }}>{tr('Package', 'الحزمة')}</Button>
                     <Button size="sm" variant="ghost" className="!text-rose-600" icon={<Trash2 size={14} />} onClick={() => del(r)} />
                   </div>
                 </div>

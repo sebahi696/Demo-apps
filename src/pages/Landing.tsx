@@ -29,18 +29,18 @@ export default function Landing() {
               {tr('Free interactive demo · ready in 2 minutes', 'تجربة تفاعلية مجانية · جاهزة خلال دقيقتين')}
             </div>
             <h1 className="mt-5 text-4xl sm:text-5xl font-extrabold leading-[1.1] tracking-tight">
-              {tr('Your own branded app.', 'تطبيقك الخاص بعلامتك.')}
+              {tr('Your restaurant’s own app.', 'تطبيق مطعمك الخاص.')}
               <br />
-              <span className="text-amber-400">{tr('Try it before you buy it.', 'جرّبه قبل أن تشتريه.')}</span>
+              <span className="text-amber-400">{tr('0% commission. Try it free.', '0% عمولة. جرّبه مجاناً.')}</span>
             </h1>
-            <p className="mt-5 text-lg text-gray-300 max-w-xl">{tl(PLATFORM.tagline)} {tr('Ordering, loyalty points, QR rewards, bookings and a full admin panel — with your name, logo and colors.', 'الطلبات، نقاط الولاء، مكافآت QR، الحجوزات ولوحة تحكم كاملة — باسمك وشعارك وألوانك.')}</p>
+            <p className="mt-5 text-lg text-gray-300 max-w-xl">{tl(PLATFORM.tagline)} {tr('Online ordering, delivery with your own riders, loyalty, table QR and a kitchen screen — for restaurants, cafés, bakeries and fast food.', 'الطلب أونلاين، التوصيل مع سائقيك، الولاء، QR الطاولات وشاشة المطبخ — للمطاعم والمقاهي والمخابز والوجبات السريعة.')}</p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Button size="lg" variant="accent" onClick={() => nav('/start')} className="!rounded-full px-7">
                 {tr('Build my demo app', 'أنشئ تطبيقي التجريبي')} <ArrowRight size={18} className="rtl:rotate-180" />
               </Button>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             {(Object.values(PRESETS)).map((p) => (
               <button
                 key={p.industry}
@@ -53,13 +53,11 @@ export default function Landing() {
                 <div className="text-xs mt-1 text-white/70 leading-snug">{tl(p.blurb)}</div>
               </button>
             ))}
-            {COMING_SOON.map((c) => (
-              <div key={c.emoji} className="rounded-3xl p-4 bg-white/5 border border-white/10">
-                <div className="text-4xl opacity-60">{c.emoji}</div>
-                <div className="mt-6 font-bold text-white/70">{tl(c.label)}</div>
-                <div className="text-xs mt-1 text-white/40">{tr('Coming soon', 'قريباً')}</div>
-              </div>
-            ))}
+            <div className="col-span-2 flex flex-wrap gap-2">
+              {COMING_SOON.map((c) => (
+                <span key={c.emoji} className="rounded-full bg-white/5 border border-white/10 px-3 py-1.5 text-xs text-white/60">{c.emoji} {tl(c.label)} · {tr('soon', 'قريباً')}</span>
+              ))}
+            </div>
           </div>
         </div>
       </header>
