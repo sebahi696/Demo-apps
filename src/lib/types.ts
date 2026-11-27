@@ -289,7 +289,7 @@ export interface Order {
   payment: PaymentKey;
   paid: boolean;
   status: OrderStatus;
-  history: { status: OrderStatus; at: number }[];
+  history: { status: OrderStatus; at: number; by?: string }[]; // by = staff id
   createdAt: number;
   updatedAt: number;
   couponCode?: string;

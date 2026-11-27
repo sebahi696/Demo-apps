@@ -207,7 +207,7 @@ export function Checkout() {
             )}
           </>
         )}
-        {f !== 'dineIn' && <WhenPicker when={when} setWhen={setWhen} />}
+        {f !== 'dineIn' && <WhenPicker when={when} setWhen={setWhen} travel={f === 'delivery' ? cfg.fulfillment.zones.find((z) => z.id === zone)?.eta ?? 0 : 0} />}
         {f === 'pickup' && <div className="text-xs text-gray-500">📍 {[cfg.business.address, cfg.business.city].filter(Boolean).join(', ') || tl(cfg.business.name)}</div>}
         {f === 'dineIn' && (
           <>
@@ -323,10 +323,11 @@ export function TrashBtn({ onClick }: { onClick: () => void }) {
 }
 
 /** ASAP, or a time slot today / tomorrow within opening hours. */
-function WhenPicker({ when, setWhen }: { when: 'asap' | number; setWhen: (v: 'asap' | number) => void }) {
+function WhenPicker({ when, setWhen, travel = 0 }: { when: 'asap' | number; setWhen: (v: 'asap' | number) => void; travel?: number }) {
   const { cfg, tr, lang } = useDemo();
   const [day, setDay] = useState(0);
   const prep = cfg.fulfillment.prepMinutes + cfg.business.busyExtraMinutes;
+  const eta = prep + travel;
   const slots = (() => {
     const base = new Date();
     base.setDate(base.getDate() + day);
@@ -345,7 +346,7 @@ function WhenPicker({ when, setWhen }: { when: 'asap' | number; setWhen: (v: 'as
     <div className="space-y-2">
       <div className="font-bold">{tr('When?', 'متى؟')}</div>
       <div className="grid grid-cols-2 gap-2">
-        <button onClick={() => setWhen('asap')} className={cx('rounded-app border py-2.5 text-sm font-semibold', when === 'asap' ? 'border-brand bg-brand/5 text-brand' : 'border-gray-200')}>⚡ {tr(`ASAP · ~${prep} min`, `بأسرع وقت · ~${prep} د`)}</button>
+        <button onClick={() => setWhen('asap')} className={cx('rounded-app border py-2.5 text-sm font-semibold', when === 'asap' ? 'border-brand bg-brand/5 text-brand' : 'border-gray-200')}>⚡ {tr(`ASAP · ~${eta} min`, `بأسرع وقت · ~${eta} د`)}</button>
         <button onClick={() => setWhen(slots[0] ?? 'asap')} className={cx('rounded-app border py-2.5 text-sm font-semibold', when !== 'asap' ? 'border-brand bg-brand/5 text-brand' : 'border-gray-200')}>🗓️ {tr('Schedule', 'جدولة')}</button>
       </div>
       {when !== 'asap' && (

@@ -123,3 +123,17 @@ Schema `demo_studio` (table `leads`, locked with RLS) plus RPC functions `demo_s
 - Fixed: editing a product duplicated it in the menu. Deals reject duplicate codes and percent > 100. Campaigns can't be sent to an empty audience. Duplicate staff PINs are flagged.
 - Money in Arabic no longer flips ("$US"); LBP shows as "LBP"/"ل.ل".
 - Mobile demo bar no longer overflows; the checklist closes when you change screens on a phone. Switches no longer stretch rows. Printed tickets are HTML-escaped.
+
+## v4.2 — reports, live preview, polish
+- **Reports** (Owner → Reports): one date filter (today, yesterday, 7/30/90 days, this month, custom) and branch filter for every tab, compared with the previous period; CSV export and print on each tab.
+  - Sales: revenue, orders, average order, money breakdown (gross, discounts, delivery, VAT, net, tips), daily trend vs previous period, channel and payment mix, busiest hours and weekdays, lost orders, speed of service, ratings, branches, bookings.
+  - Invoices: numbered tax invoices (INV-YYYY-#####), filter paid/unpaid/cancelled, printable invoice / save as PDF.
+  - Products: top items by sales or quantity, categories, slow movers.
+  - Staff & kitchen: who accepted, prepared and declined orders, average accept and prep time, on-time rate, sales and tips per person (every status change now records the staff member).
+  - Riders: deliveries, average time, on-time %, cash collected, short at hand-in, cash still held.
+  - Deals & promos: every code with uses, customers, new customers, sales, discount and return; push campaigns with conversion.
+  - Loyalty & wallet: points given/redeemed, active members, points liability, where points come from, rewards claimed, VIP tiers, wallet and gift cards.
+  - Customers: first-time vs returning, repeat rate, groups, top customers.
+- Charts follow a colour-blind-checked palette with hover tooltips; the dashboard uses the same charts.
+- Wizard live preview now follows menu style (list/grid/big photos), light/dark, header, cards, fonts and corners, and shows on phones too.
+- Dark mode keeps brand-coloured text readable; product sheet has quantity next to Add; delivery ASAP time includes travel; more room above the cart bar.

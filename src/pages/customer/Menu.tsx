@@ -151,7 +151,7 @@ function ProductRow({ p, onOpen }: { p: Product; onOpen: () => void }) {
           {p.isNew && <Badge className="bg-brand2 text-onbrand2">{tr('New', 'جديد')}</Badge>}
           {data.favorites.includes(p.id) && <Heart size={13} className="fill-rose-500 text-rose-500 shrink-0" />}
         </div>
-        {p.tags?.length > 0 && <div className="text-[11px] mt-0.5">{p.tags.slice(0, 3).map((t) => TAGS[t]?.icon).join(' ')}</div>}
+        {p.tags?.length > 0 && <div className="text-[11px] text-gray-500 mt-0.5 truncate">{p.tags.slice(0, 2).map((t) => TAGS[t] && `${TAGS[t].icon} ${tl(TAGS[t])}`).filter(Boolean).join(' · ')}</div>}
         <div className="text-xs text-gray-500 line-clamp-2 mt-0.5">{tl(p.desc)}</div>
         <div className="flex items-center justify-between mt-1.5">
           <span className="font-bold text-sm">{m(p.price)}{p.compareAt && p.compareAt > p.price && <span className="ms-1.5 text-xs text-gray-400 line-through font-normal">{m(p.compareAt)}</span>}{m2(p.price) && <span className="block text-[11px] font-medium text-gray-400">{m2(p.price)}</span>}</span>
@@ -192,10 +192,13 @@ export function ProductSheet({ p, onClose }: { p: Product; onClose: () => void }
   return (
     <Modal open onClose={onClose} contained footer={
       ok ? (
-        <Button block size="lg" onClick={add} className="justify-between">
-          <span>{tr('Add to cart', 'أضف إلى السلة')}</span>
-          <span className="tabular-nums">{m(unit * qty)}</span>
-        </Button>
+        <div className="flex items-center gap-3">
+          <Stepper value={qty} onChange={setQty} min={1} max={p.stock ?? 20} />
+          <Button block size="lg" onClick={add} className="justify-between flex-1">
+            <span>{tr('Add', 'أضف')}</span>
+            <span className="tabular-nums">{m(unit * qty)}</span>
+          </Button>
+        </div>
       ) : (
         <Button block size="lg" variant={alert ? 'outline' : 'dark'} icon={<BellRing size={18} />} onClick={() => {
           update((d) => toggleStockAlert(d, p.id));
@@ -262,9 +265,6 @@ export function ProductSheet({ p, onClose }: { p: Product; onClose: () => void }
       <div className="mt-5">
         <div className="font-bold mb-2">{tr('Special request', 'طلب خاص')}</div>
         <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder={tr('e.g. no onions', 'مثلاً: بدون بصل')} />
-      </div>
-      <div className="mt-5 flex items-center justify-center">
-        <Stepper value={qty} onChange={setQty} min={1} max={p.stock ?? 20} />
       </div>
     </Modal>
   );

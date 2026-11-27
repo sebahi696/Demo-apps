@@ -21,7 +21,7 @@ export function useDemo() {
   /** Second-currency price, e.g. "1,430,000 LL", or '' when off */
   const m2 = (n: number) => {
     const v = dualPrice(demo, n);
-    return v === null ? '' : `${v.toLocaleString('en')} ${cfg.dual.currency === 'LBP' ? (i18n.lang === 'ar' ? 'ل.ل' : 'LL') : cfg.dual.currency}`;
+    return v === null ? '' : money(v, cfg.dual.currency, i18n.lang);
   };
   const branchId = demo.data.branchId ?? cfg.branches[0]?.id;
   return { id, demo, cfg, data: demo.data, update, m, m2, branchId, preset, terms: preset.terms, base: `/d/${id}`, ...i18n };

@@ -298,7 +298,9 @@ function StaffPin({ open, onClose, onOk }: { open: boolean; onClose: () => void;
   const [v, setV] = useState('');
   useEffect(() => {
     if (v.length === 4) {
-      if (data.staff.some((s) => s.active && s.pin === v)) {
+      const who = data.staff.find((s) => s.active && s.pin === v);
+      if (who) {
+        sessionStorage.setItem('staffWho-' + location.hash.split('/')[2], who.id);
         setV('');
         onOk();
       } else {

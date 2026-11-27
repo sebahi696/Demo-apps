@@ -53,3 +53,11 @@ button { -webkit-tap-highlight-color: transparent; }
 .app-dark.cards-outlined .rounded-app.bg-white { border-color: #33333b !important; }
 .app-dark .bg-amber-50 { background-color: #2a2312 !important; }
 .app-dark .text-amber-900 { color: #fcd34d !important; }
+
+/* Dark mode: brand-coloured text and icons are lifted toward white so a dark brand
+   (espresso brown, navy, forest green) stays readable on the near-black surface. */
+.app-dark .text-brand { color: color-mix(in srgb, rgb(var(--brand)) 50%, #ffffff) !important; }
+.app-dark .border-brand { border-color: color-mix(in srgb, rgb(var(--brand)) 60%, #ffffff) !important; }
+.app-dark .bg-brand\/5, .app-dark .bg-brand\/10 { background-color: color-mix(in srgb, rgb(var(--brand)) 22%, #18181c) !important; }
+/* Pastel product tiles glare at night: tone them down a little. */
+.app-dark [style*="background"].grid.place-items-center { filter: brightness(.82) saturate(.9); }

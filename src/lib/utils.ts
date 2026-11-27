@@ -107,9 +107,15 @@ export async function resizeImage(file: File, max = 640, type = 'image/jpeg', qu
   }
 }
 
-export function downloadCsv(filename: string, rows: (string | number)[][]) {
+/** CSV with a BOM (so Excel shows Arabic), and cells that start like a formula are neutralised. */
+export function downloadCsv(filename: string, rows: (string | number | undefined | null)[][]) {
+  const cell = (v: string | number | undefined | null) => {
+    let t = String(v ?? '');
+    if (typeof v === 'string' && /^[=+\-@\t\r]/.test(t) && isNaN(Number(t))) t = "'" + t;
+    return `"${t.replace(/"/g, '""')}"`;
+  };
   const csv = rows
-    .map((r) => r.map((v) => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
+    .map((r) => r.map(cell).join(','))
     .join('\n');
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a');

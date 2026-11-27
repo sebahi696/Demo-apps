@@ -352,12 +352,21 @@ export const statusTone: Record<OrderStatus, string> = {
   cancelled: 'bg-rose-100 text-rose-800',
 };
 
-export function setOrderStatus(d: Demo, orderId: string, status: OrderStatus) {
+/** Who did a step when nobody is signed in (simulation, guided tour): front of house or kitchen by role. */
+function staffFor(d: Demo, status: OrderStatus, n: number) {
+  const kitchen = status === 'preparing' || status === 'ready';
+  const pool = d.data.staff.filter((s) => s.active && (kitchen ? s.role === 'kitchen' : s.role !== 'kitchen'));
+  const list = pool.length ? pool : d.data.staff.filter((s) => s.active);
+  return list.length ? list[n % list.length].id : undefined;
+}
+
+export function setOrderStatus(d: Demo, orderId: string, status: OrderStatus, by?: string) {
   const o = d.data.orders.find((x) => x.id === orderId);
   if (!o || o.status === status) return;
   o.status = status;
   o.updatedAt = Date.now();
-  o.history.push({ status, at: Date.now() });
+  const staffStep = status !== 'completed' || o.fulfillment !== 'delivery';
+  o.history.push({ status, at: Date.now(), by: staffStep ? by ?? staffFor(d, status, o.number) : undefined });
   if (status === 'accepted') tourDone(d, 'staffAccept');
   if (status === 'outForDelivery' && !o.riderId && o.fulfillment === 'delivery') {
     const r = suggestRider(d, o.branchId);

@@ -2,7 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { NavLink, Route, Routes, Link } from 'react-router-dom';
 import {
   LayoutDashboard, Receipt, Package, Users, Gift, Tag, Megaphone, CalendarDays, Palette, Settings as SettingsIcon, UserCog, FileText,
-  TrendingUp, ShoppingCart, Wallet, Star, Download, Search, Plus, Minus, MessageSquareHeart, CreditCard, Bike, XCircle, Paintbrush,
+  TrendingUp, ShoppingCart, BarChart3, Wallet, Star, Download, Search, Plus, Minus, MessageSquareHeart, CreditCard, Bike, XCircle, Paintbrush,
 } from 'lucide-react';
 import { useDemo } from '../../lib/demo';
 import { toast } from '../../lib/store';
@@ -11,18 +11,21 @@ import type { Customer, Order, OrderStatus, LostReason } from '../../lib/types';
 import { DAY, downloadCsv, fmtDate, fmtTime, timeAgo, ymd } from '../../lib/utils';
 import { Badge, Button, Card, Input, Modal, Segmented, Stat, cx } from '../../components/ui';
 import { OrderTicket } from '../staff/StaffApp';
+import { ColumnChart, LineChart, SegmentedBar, StatTile, compact } from '../../components/charts';
 import Catalog from './Catalog';
 import { Loyalty, Deals, Campaigns } from './Marketing';
 import { Branding, Settings, Staff, OwnerReservations, Plan } from './Settings';
 import { Reviews, WalletAdmin } from './Extras';
 import { Riders, DailyClose } from './Riders';
 import Design from './Design';
+import Reports from './Reports';
 
 export default function OwnerApp() {
   const { cfg, tr, tl, terms } = useDemo();
   const mod = cfg.modules;
   const nav: { to: string; icon: ReactNode; label: string; end?: boolean; show?: boolean }[] = [
     { to: '', end: true, icon: <LayoutDashboard size={18} />, label: tr('Dashboard', 'لوحة القيادة') },
+    { to: 'reports', icon: <BarChart3 size={18} />, label: tr('Reports', 'التقارير') },
     { to: 'orders', icon: <Receipt size={18} />, label: tr('Orders', 'الطلبات'), show: mod.ordering },
     { to: 'catalog', icon: <Package size={18} />, label: tl(terms.catalog), show: mod.ordering },
     { to: 'riders', icon: <Bike size={18} />, label: tr('Riders & cash', 'السائقون والنقود'), show: mod.delivery },
@@ -65,6 +68,7 @@ export default function OwnerApp() {
         <div className="max-w-6xl mx-auto p-4 sm:p-6 pb-24">
           <Routes>
             <Route index element={<Dashboard />} />
+            <Route path="reports" element={<Reports />} />
             <Route path="orders" element={<Orders />} />
             <Route path="catalog" element={<Catalog />} />
             <Route path="customers" element={<Customers />} />
@@ -123,14 +127,20 @@ function Dashboard() {
   const h = new Date().getHours();
 
   const series = useMemo(() => {
-    const out: { label: string; value: number }[] = [];
+    const out: { label: string; tip: string; value: number; prev: number }[] = [];
     for (let i = days - 1; i >= 0; i--) {
       const d = new Date(Date.now() - i * DAY);
-      const key = ymd(d);
-      out.push({ label: fmtDate(d.getTime(), lang, { day: 'numeric', month: 'short' }), value: cur.filter((o) => ymd(new Date(o.createdAt)) === key).reduce((s, o) => s + o.total, 0) });
+      const pd = new Date(Date.now() - (i + days) * DAY);
+      const key = ymd(d), pkey = ymd(pd);
+      out.push({
+        label: fmtDate(d.getTime(), lang, days > 7 ? { day: 'numeric', month: 'short' } : { weekday: 'short' }),
+        tip: fmtDate(d.getTime(), lang, { weekday: 'long', day: 'numeric', month: 'short' }),
+        value: Math.round(cur.filter((o) => ymd(new Date(o.createdAt)) === key).reduce((s, o) => s + o.total, 0) * 100) / 100,
+        prev: Math.round(prev.filter((o) => ymd(new Date(o.createdAt)) === pkey).reduce((s, o) => s + o.total, 0) * 100) / 100,
+      });
     }
     return out;
-  }, [cur, days, lang]);
+  }, [cur, prev, days, lang]);
 
   const top = useMemo(() => {
     const map = new Map<string, { name: string; emoji: string; qty: number; rev: number }>();
@@ -153,7 +163,10 @@ function Dashboard() {
       <PageHead
         title={`${h < 12 ? tr('Good morning', 'صباح الخير') : tr('Good evening', 'مساء الخير')}${cfg.lead.ownerName ? ', ' + cfg.lead.ownerName.split(' ')[0] : ''} 👋`}
         sub={tr('Here is how your business is doing.', 'إليك أداء عملك.')}
-        action={<Segmented value={range} onChange={setRange} options={[{ value: '7', label: tr('7 days', '7 أيام') }, { value: '30', label: tr('30 days', '30 يوماً') }]} />}
+        action={<>
+          <Segmented value={range} onChange={setRange} options={[{ value: '7', label: tr('7 days', '7 أيام') }, { value: '30', label: tr('30 days', '30 يوماً') }]} />
+          <Link to="reports"><Button variant="outline" size="sm" icon={<BarChart3 size={15} />}>{tr('Full reports', 'التقارير الكاملة')}</Button></Link>
+        </>}
       />
       <div className="mb-4"><DailyClose /></div>
       {live.length > 0 && (
@@ -164,21 +177,23 @@ function Dashboard() {
         </Link>
       )}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <Stat icon={<Wallet size={16} />} label={tr('Revenue', 'الإيرادات')} value={m(Math.round(revenue))} sub={delta ? <span className={delta > 0 ? 'text-emerald-600' : 'text-rose-600'}>{delta > 0 ? '▲' : '▼'} {Math.abs(delta)}% {tr('vs previous', 'عن الفترة السابقة')}</span> : undefined} />
-        <Stat icon={<ShoppingCart size={16} />} label={tr('Orders', 'الطلبات')} value={cur.length} sub={tr(`Avg ${m(cur.length ? revenue / cur.length : 0)}`, `المتوسط ${m(cur.length ? revenue / cur.length : 0)}`)} />
-        <Stat icon={<Users size={16} />} label={tr('Loyalty members', 'أعضاء الولاء')} value={members} sub={tr(`${data.customers.length} customers total`, `${data.customers.length} زبوناً إجمالاً`)} />
-        <Stat icon={<Star size={16} />} label={tr('Points issued', 'النقاط الممنوحة')} value={issued.toLocaleString()} sub={tr(`${redeemed} rewards redeemed`, `${redeemed} مكافآت مستبدلة`)} />
+        <StatTile hero icon={<Wallet size={15} />} label={tr('Revenue', 'الإيرادات')} value={m(Math.round(revenue))} delta={prevRevenue ? delta : undefined} deltaLabel={tr('vs previous', 'مقارنة بالسابق')} />
+        <StatTile icon={<ShoppingCart size={15} />} label={tr('Orders', 'الطلبات')} value={cur.length} delta={prev.length ? ((cur.length - prev.length) / prev.length) * 100 : undefined} hint={tr(`avg ${m(cur.length ? revenue / cur.length : 0)}`, `المتوسط ${m(cur.length ? revenue / cur.length : 0)}`)} />
+        <StatTile icon={<Users size={15} />} label={tr('Loyalty members', 'أعضاء الولاء')} value={members} hint={tr(`${data.customers.length} customers total`, `${data.customers.length} زبوناً إجمالاً`)} />
+        <StatTile icon={<Star size={15} />} label={tr('Points issued', 'النقاط الممنوحة')} value={issued.toLocaleString()} hint={tr(`${redeemed} rewards redeemed`, `${redeemed} مكافآت مستبدلة`)} />
       </div>
       {(cfg.modules.reviews || cfg.modules.tips) && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-3">
-          {cfg.modules.reviews && <Stat icon={<Star size={16} className="text-amber-500" />} label={tr('Average rating', 'متوسط التقييم')} value={avgRating ? `${avgRating.toFixed(1)} ★` : '—'} sub={tr(`${rated.length} ratings`, `${rated.length} تقييم`)} />}
-          {cfg.modules.tips && <Stat icon={<Wallet size={16} />} label={tr('Tips for the team', 'إكراميات الفريق')} value={m(Math.round(tips))} />}
+          {cfg.modules.reviews && <StatTile icon={<Star size={15} className="text-amber-500" />} label={tr('Average rating', 'متوسط التقييم')} value={avgRating ? `${avgRating.toFixed(1)} ★` : '—'} hint={tr(`${rated.length} ratings`, `${rated.length} تقييم`)} />}
+          {cfg.modules.tips && <StatTile icon={<Wallet size={15} />} label={tr('Tips for the team', 'إكراميات الفريق')} value={m(Math.round(tips))} />}
         </div>
       )}
 
       <Card className="p-5 mt-4">
-        <div className="flex items-center gap-2 font-bold"><TrendingUp size={18} /> {tr('Revenue', 'الإيرادات')}</div>
-        <BarChart data={series} format={(v) => m(Math.round(v))} />
+        <div className="flex items-center gap-2 font-bold mb-3"><TrendingUp size={18} /> {tr('Revenue by day', 'الإيرادات حسب اليوم')}</div>
+        {days > 7
+          ? <LineChart data={series} format={compact} tipFormat={m} valueName={tr('This period', 'هذه الفترة')} prevName={tr('Previous period', 'الفترة السابقة')} />
+          : <ColumnChart data={series} format={compact} tipFormat={m} valueName={tr('This period', 'هذه الفترة')} prevName={tr('Previous period', 'الفترة السابقة')} every={1} />}
       </Card>
 
       <div className="grid lg:grid-cols-3 gap-4 mt-4">
@@ -199,19 +214,9 @@ function Dashboard() {
         </Card>
         <Card className="p-5">
           <div className="font-bold mb-3">{tr('Order channels', 'قنوات الطلب')}</div>
-          <div className="flex h-3 rounded-full overflow-hidden">
-            {channels.map((c, i) => <div key={c.f} style={{ width: `${(c.n / cur.length) * 100}%`, opacity: 1 - i * 0.3 }} className="bg-brand" />)}
-          </div>
-          <div className="mt-3 space-y-1.5 text-sm">
-            {channels.map((c, i) => (
-              <div key={c.f} className="flex items-center gap-2"><span className="h-3 w-3 rounded bg-brand" style={{ opacity: 1 - i * 0.3 }} /><span className="flex-1">{chLabel[c.f]}</span><span className="font-semibold">{Math.round((c.n / cur.length) * 100)}%</span></div>
-            ))}
-          </div>
+          <SegmentedBar format={(n) => String(n)} parts={channels.map((c) => ({ key: c.f, label: chLabel[c.f], value: c.n }))} />
           <div className="font-bold mt-6 mb-2">{tr('Busiest hours', 'أوقات الذروة')}</div>
-          <div className="flex items-end gap-0.5 h-16" dir="ltr">
-            {hours.map((v, i) => <div key={i} title={`${i}:00 · ${v}`} className="flex-1 rounded-t bg-brand2" style={{ height: `${(v / maxH) * 100}%`, minHeight: 2 }} />)}
-          </div>
-          <div className="flex justify-between text-[10px] text-gray-400 mt-1" dir="ltr"><span>0h</span><span>12h</span><span>23h</span></div>
+          <ColumnChart data={hours.slice(8).map((v, i) => ({ label: String(i + 8), tip: `${i + 8}:00 · ${v} ${tr('orders', 'طلب')}`, value: v }))} valueName={tr('Orders', 'الطلبات')} height={150} every={3} />
         </Card>
       </div>
 

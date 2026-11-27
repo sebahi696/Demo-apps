@@ -50,7 +50,7 @@ export function Rewards() {
                   <div className="text-4xl">{r.emoji}</div>
                   <div className="font-semibold mt-2 leading-tight flex-1">{tl(r.name)}</div>
                   <div className="text-sm font-bold text-brand mt-1">{r.cost} {tr('pts', 'نقطة')}</div>
-                  <Button size="sm" className="mt-2" disabled={!ok} onClick={() => setConfirm(r.id)}>{ok ? tr('Redeem', 'استبدل') : tr(`${r.cost - c.points} more`, `ينقصك ${r.cost - c.points}`)}</Button>
+                  <Button size="sm" className="mt-2" disabled={!ok} onClick={() => setConfirm(r.id)}>{ok ? tr('Redeem', 'استبدل') : tr(`${r.cost - c.points} pts to go`, `ينقصك ${r.cost - c.points}`)}</Button>
                 </div>
               );
             })}

@@ -125,7 +125,7 @@ export default function Home() {
   const first = order[0];
 
   return (
-    <div className="absolute inset-0 overflow-y-auto overscroll-contain pb-28">
+    <div className="absolute inset-0 overflow-y-auto overscroll-contain pb-40">
       <div className={cx(headerBg, 'text-onbrand px-4 pt-5 rounded-b-[28px] relative overflow-hidden', ui.header === 'image' ? 'pb-20' : 'pb-14')}>
         {ui.header === 'image' && (
           <div className="absolute inset-0 pointer-events-none select-none opacity-[.14] text-[64px] leading-[1.25] break-all" aria-hidden>

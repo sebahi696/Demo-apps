@@ -219,7 +219,7 @@ export function OrderTicket({ o, compact }: { o: Order; compact?: boolean }) {
             <Button size="sm" block icon={<Bike size={15} />} onClick={() => setDispatching(true)}>{tr('Send rider', 'أرسل سائقاً')}</Button>
           ) : (
             <Button size="sm" block icon={<Check size={15} />} onClick={() => {
-              update((d) => setOrderStatus(d, o.id, nx));
+              update((d) => setOrderStatus(d, o.id, nx, sessionStorage.getItem('staffWho-' + d.config.id) ?? undefined));
               if (nx === 'completed' && isMe && (cfg.modules.loyaltyPoints || cfg.modules.loyaltyStamps)) toast(tr('Done — loyalty points sent to the customer', 'تم — أُرسلت نقاط الولاء للزبون'));
             }}>{actionLabel[nx]}</Button>
           )}
@@ -550,7 +550,7 @@ function Kitchen() {
                 ))}
                 {o.note && <li className="text-sm bg-amber-50 text-amber-900 rounded-lg px-2 py-1.5">📝 {o.note}</li>}
               </ul>
-              <button onClick={() => update((d) => setOrderStatus(d, o.id, o.status === 'accepted' ? 'preparing' : 'ready'))}
+              <button onClick={() => update((d) => setOrderStatus(d, o.id, o.status === 'accepted' ? 'preparing' : 'ready', sessionStorage.getItem('staffWho-' + d.config.id) ?? undefined))}
                 className={cx('py-3.5 font-bold text-white', o.status === 'accepted' ? 'bg-gray-900' : 'bg-emerald-600')}>
                 {o.status === 'accepted' ? tr('Start', 'ابدأ') : tr('Ready ✓', 'جاهز ✓')}
               </button>

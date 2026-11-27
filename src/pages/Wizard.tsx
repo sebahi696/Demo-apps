@@ -255,6 +255,10 @@ export default function Wizard() {
                   ))}
                 </div>
               </div>
+              <div className="lg:hidden pt-2">
+                <Label>{tr('Live preview', 'معاينة مباشرة')}</Label>
+                <MiniPreview cfg={a} />
+              </div>
             </div>
           )}
 

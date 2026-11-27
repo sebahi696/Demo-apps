@@ -140,7 +140,7 @@ export function Screen({ title, back, right, children, className, noPad }: { tit
           {right}
         </header>
       )}
-      <div className={cx(!noPad && 'p-4', 'pb-28', className)}>{children}</div>
+      <div className={cx(!noPad && 'p-4', 'pb-40', className)}>{children}</div>
     </div>
   );
 }

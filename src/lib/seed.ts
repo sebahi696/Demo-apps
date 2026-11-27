@@ -138,6 +138,48 @@ export function migrateConfig(c: DemoConfig): DemoConfig {
   return c;
 }
 
+/**
+ * Gives a finished order a realistic timeline (accepted → preparing → ready → out → done) with the
+ * staff member who handled each step, so staff, kitchen and rider reports have real durations.
+ * Deterministic per order number, so older demos get the same timeline every time they load.
+ */
+export function fillTimeline(o: Order, c: DemoConfig, staff: DemoData['staff']) {
+  if ((o.status !== 'completed' && o.status !== 'cancelled') || o.history.some((h) => h.status === 'accepted' || h.status === 'ready')) return;
+  const rnd = seeded(o.number * 7919 + 13);
+  const r = (n: number) => Math.floor(rnd() * n);
+  const front = staff.filter((s) => s.role !== 'kitchen');
+  const kitchen = staff.filter((s) => s.role === 'kitchen');
+  const who = (list: typeof staff) => (list.length ? list[r(list.length)] : staff[0])?.id;
+  const t0 = o.createdAt;
+  const h: Order['history'] = [{ status: 'pending', at: t0 }];
+  if (o.status === 'cancelled') {
+    h.push({ status: 'cancelled', at: t0 + (1 + r(4)) * 60000, by: who(front) });
+  } else {
+    const prep = Math.max(5, Math.round((c.fulfillment.prepMinutes || 15) * (0.6 + rnd() * 0.9)));
+    let t = t0 + (30 + r(240)) * 1000;
+    h.push({ status: 'accepted', at: t, by: who(front) });
+    t += (1 + r(3)) * 60000;
+    h.push({ status: 'preparing', at: t, by: who(kitchen) });
+    t += prep * 60000;
+    h.push({ status: 'ready', at: t, by: who(kitchen) });
+    if (o.fulfillment === 'delivery') {
+      t += (2 + r(8)) * 60000;
+      h.push({ status: 'outForDelivery', at: t, by: who(front) });
+      const eta = c.fulfillment.zones.find((z) => z.id === o.zoneId)?.eta ?? 30;
+      t += Math.round(eta * (0.55 + rnd() * 0.8)) * 60000;
+    } else t += (3 + r(15)) * 60000;
+    if (o.status === 'completed') h.push({ status: 'completed', at: t, by: o.fulfillment === 'delivery' ? undefined : who(front) });
+  }
+  // Never end in the future (orders placed minutes ago): slide the whole timeline back.
+  const over = h[h.length - 1].at - Date.now();
+  if (over > 0) {
+    h.forEach((x) => (x.at -= over + 60000));
+    o.createdAt = h[0].at;
+  }
+  o.history = h;
+  o.updatedAt = h[h.length - 1].at;
+}
+
 export function migrateData(d: DemoData, c: DemoConfig): DemoData {
   d.favorites ??= [];
   d.stockAlerts ??= [];
@@ -153,7 +195,7 @@ export function migrateData(d: DemoData, c: DemoConfig): DemoData {
   d.collections ??= [];
   d.serviceRequests ??= [];
   d.settlements ??= [];
-  void c;
+  d.orders.forEach((o) => fillTimeline(o, c, d.staff));
   return d;
 }
 
@@ -268,19 +310,32 @@ export function buildData(cfg: DemoConfig): DemoData {
     collections.push({ id: uid('cc'), riderId: o.riderId!, orderId: o.id, orderNumber: o.number, amount: o.total, at: o.updatedAt, settled: false });
   });
   const settlements: DemoData['settlements'] = [];
-  for (let day = 1; day <= 4; day++)
+  // Past hand-ins match the cash orders each rider actually delivered that day.
+  for (let day = 1; day <= 14; day++) {
+    const key = ymd(new Date(now - day * DAY));
     RIDERS.forEach((_, i) => {
-      const collected = round2(80 + r(300) + r(100) / 100);
-      const short = r(6) === 0 ? 5 * (1 + r(2)) : 0;
-      settlements.push({ id: uid('st'), riderId: 'rd' + (i + 1), collected, counted: collected - short, short, at: now - day * DAY + 3600000 });
+      const id = 'rd' + (i + 1);
+      const cash = orders.filter((o) => o.riderId === id && o.status === 'completed' && o.payment === 'cash' && ymd(new Date(o.createdAt)) === key);
+      if (!cash.length) return;
+      const collected = round2(cash.reduce((a, o) => a + o.total, 0));
+      cash.forEach((o) => (o.collected = o.total));
+      const short = r(8) === 0 ? 5 * (1 + r(2)) : 0;
+      settlements.push({ id: uid('st'), riderId: id, collected, counted: round2(collected - short), short, at: new Date(key + 'T23:30').getTime() });
     });
+  }
 
-  // Some customers already redeemed points
+  // Customers already redeemed real rewards (vouchers issued, most of them used).
+  const vouchers: DemoData['vouchers'] = [];
+  const rewardList = pr.rewards.filter((x) => x.active);
   customers.slice(1).forEach((c) => {
-    if (c.points > 400 && r(2) === 0) {
-      const spent = 100 * (1 + r(3));
-      c.points -= spent;
-      ledger.push({ id: uid('l'), customerId: c.id, points: -spent, stamps: 0, source: 'reward', note: 'Reward', at: now - r(20) * DAY });
+    for (let k = 0; k < 3 && rewardList.length; k++) {
+      const rw = rewardList[r(rewardList.length)];
+      if (c.points < rw.cost + 50 || r(3) === 0) break;
+      const when = now - (1 + r(55)) * DAY;
+      c.points -= rw.cost;
+      ledger.push({ id: uid('l'), customerId: c.id, points: -rw.cost, stamps: 0, source: 'reward', note: rw.name.en, at: when });
+      const used = r(5) !== 0;
+      vouchers.push({ id: uid('v'), code: 'RW-' + code(5), customerId: c.id, rewardId: rw.id, name: rw.name, emoji: rw.emoji, kind: rw.kind, value: rw.value, productId: rw.productId, status: used ? 'used' : 'active', createdAt: when, usedAt: used ? Math.min(now - 3600000, when + (1 + r(48)) * 3600000) : undefined });
     }
   });
   // One past order for the demo guest, so "order again" works
@@ -308,7 +363,7 @@ export function buildData(cfg: DemoConfig): DemoData {
     }
   }
 
-  return {
+  const data: DemoData = {
     categories: structuredClone(pr.categories),
     products,
     rewards: structuredClone(pr.rewards),
@@ -320,7 +375,7 @@ export function buildData(cfg: DemoConfig): DemoData {
     orders,
     reservations,
     ledger: ledger.sort((a, b) => b.at - a.at).slice(0, 300),
-    vouchers: [],
+    vouchers,
     notices: [
       {
         id: uid('n'), kind: 'system', at: now, read: false,
@@ -351,6 +406,8 @@ export function buildData(cfg: DemoConfig): DemoData {
     activity: {},
     nextOrderNumber: num,
   };
+  data.orders.forEach((o) => fillTimeline(o, cfg, data.staff));
+  return data;
 }
 
 export function buildDemo(a: WizardAnswers): Demo {
