@@ -470,7 +470,7 @@ function CustomerDetail({ c }: { c: Customer }) {
       </div>
       <div className="text-sm text-gray-500 mt-3"><span dir="ltr">{c.phone}</span> · {tr('Joined', 'انضم')} {fmtDate(c.joinedAt, lang)}</div>
       <div className="mt-4 flex items-center gap-2">
-        <Input type="number" value={adj} onChange={(e) => setAdj(e.target.value)} className="!w-28" />
+        <Input type="number" min={-100000} value={adj} onChange={(e) => setAdj(e.target.value)} className="!w-28" />
         <Button size="sm" variant="outline" icon={<Plus size={14} />} onClick={() => { update((d) => addLedger(d, c.id, Math.abs(+adj || 0), 0, 'manual', 'Owner adjustment')); toast(tr('Points added', 'تمت إضافة النقاط')); }}>{tr('Add', 'إضافة')}</Button>
         <Button size="sm" variant="outline" icon={<Minus size={14} />} onClick={() => { update((d) => addLedger(d, c.id, -Math.abs(+adj || 0), 0, 'manual', 'Owner adjustment')); toast(tr('Points removed', 'تم خصم النقاط'), 'info'); }}>{tr('Remove', 'خصم')}</Button>
       </div>

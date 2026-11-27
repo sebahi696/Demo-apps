@@ -1,3 +1,4 @@
+import { toAsciiDigits } from '../../lib/validate';
 import { useState } from 'react';
 import { Upload, Plus, Trash2, RotateCcw, PackageOpen } from 'lucide-react';
 import { CLIENT_MODE, downloadPackage } from '../../lib/client';
@@ -131,8 +132,8 @@ export function Settings() {
           <Card className="p-5 space-y-3">
             <div className="font-bold">{tr('Business', 'العمل')}</div>
             <div className="grid grid-cols-2 gap-3">
-              <Field label={tr('Phone', 'الهاتف')}><Input dir="ltr" value={cfg.business.phone} onChange={(e) => set((d) => void (d.config.business.phone = e.target.value))} /></Field>
-              <Field label={tr('Email', 'البريد')}><Input dir="ltr" value={cfg.business.email} onChange={(e) => set((d) => void (d.config.business.email = e.target.value))} /></Field>
+              <Field label={tr('Phone', 'الهاتف')}><Input type="tel" value={cfg.business.phone} onChange={(e) => set((d) => void (d.config.business.phone = e.target.value))} /></Field>
+              <Field label={tr('Email', 'البريد')}><Input type="email" value={cfg.business.email} onChange={(e) => set((d) => void (d.config.business.email = e.target.value))} /></Field>
               <Field label={tr('Address', 'العنوان')}><Input value={cfg.business.address} onChange={(e) => set((d) => void (d.config.business.address = e.target.value))} /></Field>
               <Field label={tr('City', 'المدينة')}><Input value={cfg.business.city} onChange={(e) => set((d) => void (d.config.business.city = e.target.value))} /></Field>
               <Field label={tr('Country', 'الدولة')}>
@@ -186,8 +187,9 @@ export function Settings() {
         {cfg.modules.tips && (
           <Card className="p-5 space-y-3">
             <div className="font-bold">{tr('Tip options (%)', 'خيارات الإكرامية (%)')}</div>
-            <Input defaultValue={cfg.tips.join(', ')} onBlur={(e) => {
-              const v = e.target.value.split(',').map((x) => parseInt(x)).filter((x) => x >= 0).slice(0, 5);
+            <Input dir="ltr" defaultValue={cfg.tips.join(', ')} onBlur={(e) => {
+              const v = [...new Set(toAsciiDigits(e.target.value).split(/[,،\s]+/).filter(Boolean).map((x) => parseInt(x)).filter((x) => x >= 0 && x <= 50))].sort((a, b) => a - b).slice(0, 5);
+              e.target.value = (v.length ? v : cfg.tips).join(', ');
               if (v.length) set((d) => void (d.config.tips = v));
             }} />
             <div className="text-xs text-gray-500">{tr('e.g. 0, 5, 10, 15 — 0 shows as “No tip”', 'مثلاً 0، 5، 10، 15 — يظهر 0 كـ "بدون"')}</div>
@@ -224,11 +226,11 @@ export function Staff() {
         {data.staff.map((s, i) => (
           <div key={s.id} className="flex flex-wrap items-center gap-3 p-4">
             <span className="h-10 w-10 rounded-full bg-brand text-onbrand grid place-items-center font-bold">{s.name[0]}</span>
-            <Input value={s.name} onChange={(e) => update((d) => void (d.data.staff[i].name = e.target.value))} className="!h-10 !w-48" />
+            <Input kind="name" value={s.name} onChange={(e) => update((d) => void (d.data.staff[i].name = e.target.value))} className="!h-10 !w-48" />
             <Select value={s.role} onChange={(e) => update((d) => void (d.data.staff[i].role = e.target.value as StaffMember['role']))} className="!h-10 !w-40">
               {Object.entries(roles).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </Select>
-            <div className="flex items-center gap-2"><span className="text-sm text-gray-500">PIN</span><Input value={s.pin} inputMode="numeric" onChange={(e) => update((d) => void (d.data.staff[i].pin = e.target.value.replace(/\D/g, '').slice(0, 4)))} className="!h-10 !w-20 font-mono text-center" /></div>
+            <div className="flex items-center gap-2"><span className="text-sm text-gray-500">PIN</span><Input kind="pin" maxLength={4} value={s.pin} invalid={s.pin.length !== 4 || data.staff.some((o, j) => j !== i && o.pin === s.pin)} title={tr('4 digits', '4 أرقام')} onChange={(e) => update((d) => void (d.data.staff[i].pin = e.target.value.replace(/\D/g, '').slice(0, 4)))} className="!h-10 !w-20 font-mono text-center" /></div>
             <div className="ms-auto flex items-center gap-3">
               <Toggle checked={s.active} onChange={(v) => update((d) => void (d.data.staff[i].active = v))} />
               <button className="text-rose-600" onClick={() => update((d) => void (d.data.staff = d.data.staff.filter((x) => x.id !== s.id)))}><Trash2 size={16} /></button>

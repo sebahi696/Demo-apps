@@ -1,3 +1,4 @@
+import { isEmail, isName, isPhone } from '../lib/validate';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Check, Upload, Sparkles, X } from 'lucide-react';
@@ -50,7 +51,7 @@ export default function Wizard() {
   const valid = useMemo(() => {
     if (step === 1) return a.business.name.en.trim().length > 1;
     if (step === 3) return a.modules.ordering || a.modules.loyaltyPoints || a.modules.loyaltyStamps || a.modules.reservations;
-    if (step === 5) return a.lead.ownerName.trim().length > 1 && (a.lead.phone.trim().length > 5 || /\S+@\S+\.\S+/.test(a.lead.email));
+    if (step === 5) return isName(a.lead.ownerName) && isPhone(a.lead.phone) && (!a.lead.email || isEmail(a.lead.email));
     return true;
   }, [step, a]);
 
@@ -320,16 +321,19 @@ export default function Wizard() {
             <div className="space-y-5 max-w-xl">
               <H title={tr('Last step — where can we reach you?', 'الخطوة الأخيرة — كيف نتواصل معك؟')} sub={tr('Your demo is ready right after this.', 'تطبيقك التجريبي جاهز مباشرة بعد هذه الخطوة.')} />
               <Field label={tr('Your name *', 'اسمك *')}>
-                <Input value={a.lead.ownerName} onChange={(e) => set('lead', { ownerName: e.target.value })} className={cx(touched && a.lead.ownerName.trim().length < 2 && 'border-rose-400')} />
+                <Input kind="name" autoComplete="name" value={a.lead.ownerName} onChange={(e) => set('lead', { ownerName: e.target.value })}
+                  invalid={touched && !isName(a.lead.ownerName) && tr('Enter your name (letters, at least 2).', 'أدخل اسمك (حرفان على الأقل).')} />
               </Field>
               <Field label={tr('WhatsApp / phone *', 'واتساب / هاتف *')}>
-                <Input type="tel" dir="ltr" value={a.lead.phone} placeholder={COUNTRIES.find((c) => c.name.en === a.business.country)?.dial + ' …'}
+                <Input type="tel" value={a.lead.phone} placeholder={(COUNTRIES.find((c) => c.name.en === a.business.country)?.dial ?? '+') + ' 70 123 456'}
+                  invalid={touched && !isPhone(a.lead.phone) && tr('Enter a valid phone number (digits only, 7–15).', 'أدخل رقم هاتف صحيحاً (أرقام فقط، 7–15 رقماً).')}
                   onChange={(e) => { set('lead', { phone: e.target.value }); set('business', { phone: e.target.value }); }} />
               </Field>
-              <Field label={tr('Email', 'البريد الإلكتروني')}>
-                <Input type="email" dir="ltr" value={a.lead.email} onChange={(e) => { set('lead', { email: e.target.value }); set('business', { email: e.target.value }); }} />
+              <Field label={tr('Email (optional)', 'البريد الإلكتروني (اختياري)')}>
+                <Input type="email" value={a.lead.email} placeholder="name@example.com"
+                  invalid={touched && !!a.lead.email && !isEmail(a.lead.email) && tr('This email doesn’t look right.', 'البريد الإلكتروني غير صحيح.')} onChange={(e) => { set('lead', { email: e.target.value }); set('business', { email: e.target.value }); }} />
               </Field>
-              {touched && !valid && <p className="text-rose-600 text-sm">{tr('Please add your name and a phone number or email.', 'يرجى إدخال اسمك ورقم هاتف أو بريد إلكتروني.')}</p>}
+              {touched && !valid && <p className="text-rose-600 text-sm">{tr('Please fix the highlighted fields.', 'يرجى تصحيح الحقول المحددة.')}</p>}
               <p className="text-xs text-gray-500">{tr(`Your demo stays open for ${PLATFORM.trialDays} days. Data is saved on this device only.`, `يبقى تطبيقك التجريبي متاحاً لمدة ${PLATFORM.trialDays} يوماً. تُحفظ البيانات على هذا الجهاز فقط.`)}</p>
             </div>
           )}

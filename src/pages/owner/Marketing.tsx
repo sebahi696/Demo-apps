@@ -117,7 +117,7 @@ export function Loyalty() {
                   <Field label={tr('Max scans per day', 'الحد الأقصى يومياً')}><Input type="number" value={L.staticQr.dailyLimit} onChange={(e) => setL((l) => void (l.staticQr.dailyLimit = Math.max(1, +e.target.value)))} className="!h-9" /></Field>
                   <Field label={tr('Minutes between scans', 'دقائق بين كل مسح')}><Input type="number" value={L.staticQr.cooldownMinutes} onChange={(e) => setL((l) => void (l.staticQr.cooldownMinutes = Math.max(0, +e.target.value)))} className="!h-9" /></Field>
                   <Toggle checked={L.staticQr.requirePin} onChange={(v) => setL((l) => void (l.staticQr.requirePin = v))} label={tr('Require staff PIN', 'يتطلب رمز الموظف')} />
-                  {L.staticQr.requirePin && <Input value={L.staticQr.pin} onChange={(e) => setL((l) => void (l.staticQr.pin = e.target.value.slice(0, 6)))} className="!h-9 !w-28" />}
+                  {L.staticQr.requirePin && <Input kind="pin" maxLength={6} value={L.staticQr.pin} onChange={(e) => setL((l) => void (l.staticQr.pin = e.target.value.slice(0, 6)))} className="!h-9 !w-28" />}
                 </div>
               </div>
             )}
@@ -213,6 +213,10 @@ export function Deals() {
             <div className="flex-1" />
             <Button onClick={() => {
               if (!edit.title.en.trim() || !edit.code.trim()) return toast(tr('Add a title and a code', 'أضف عنواناً ورمزاً'), 'error');
+              if (edit.code.length < 3) return toast(tr('The code needs at least 3 characters', 'الرمز يحتاج 3 أحرف على الأقل'), 'error');
+              if (data.deals.some((x) => x.id !== edit.id && x.code === edit.code)) return toast(tr('Another deal already uses this code', 'عرض آخر يستخدم هذا الرمز'), 'error');
+              if (edit.kind === 'percent' && (edit.value <= 0 || edit.value > 100)) return toast(tr('Percent must be between 1 and 100', 'النسبة يجب أن تكون بين 1 و100'), 'error');
+              if (edit.kind !== 'percent' && edit.kind !== 'freeDelivery' && edit.value <= 0) return toast(tr('Enter the discount amount', 'أدخل قيمة الخصم'), 'error');
               update((d) => {
                 const i = d.data.deals.findIndex((x) => x.id === edit.id);
                 if (i >= 0) d.data.deals[i] = edit;
@@ -229,7 +233,7 @@ export function Deals() {
             <Field label={tr('Title (Arabic)', 'العنوان (عربي)')}><Input dir="rtl" value={edit.title.ar ?? ''} onChange={(e) => setEdit({ ...edit, title: { ...edit.title, ar: e.target.value } })} /></Field>
             <Field label={tr('Description (English)', 'الوصف (إنجليزي)')}><Input value={edit.desc.en} onChange={(e) => setEdit({ ...edit, desc: { ...edit.desc, en: e.target.value } })} /></Field>
             <Field label={tr('Description (Arabic)', 'الوصف (عربي)')}><Input dir="rtl" value={edit.desc.ar ?? ''} onChange={(e) => setEdit({ ...edit, desc: { ...edit.desc, ar: e.target.value } })} /></Field>
-            <Field label={tr('Code', 'الرمز')}><Input value={edit.code} onChange={(e) => setEdit({ ...edit, code: e.target.value.toUpperCase().replace(/\s/g, '') })} className="font-mono" dir="ltr" /></Field>
+            <Field label={tr('Code', 'الرمز')}><Input kind="code" value={edit.code} onChange={(e) => setEdit({ ...edit, code: e.target.value })} className="font-mono" dir="ltr" /></Field>
             <Field label={tr('Type', 'النوع')}>
               <Select value={edit.kind} onChange={(e) => setEdit({ ...edit, kind: e.target.value as DealKind })}>
                 <option value="percent">{tr('% off', 'خصم %')}</option>
@@ -315,7 +319,7 @@ export function Campaigns() {
             </div>
             {offer > 0 && <div className="text-xs text-gray-500 mt-1">{tr('Creates a personal code valid 14 days, and tracks every order that uses it.', 'ينشئ رمزاً صالحاً 14 يوماً ويتتبع كل طلب يستخدمه.')}</div>}
           </div>
-          <Button size="lg" block icon={<Send size={18} />} disabled={!title.en.trim()} onClick={() => {
+          <Button size="lg" block icon={<Send size={18} />} disabled={!title.en.trim() || !counts[aud]} onClick={() => {
             let n = 0;
             update((d) => void (n = sendCampaign(d, { en: title.en, ar: title.ar || undefined }, { en: body.en, ar: body.ar || undefined }, aud, offer)));
             setOffer(0);

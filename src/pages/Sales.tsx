@@ -79,7 +79,7 @@ export default function Sales() {
         }}>
           <Lock className="mx-auto text-amber-400" size={32} />
           <h1 className="text-white text-xl font-bold mt-3">{tr('Sales console', 'لوحة المبيعات')}</h1>
-          <Input type="password" inputMode="numeric" autoFocus value={pin} onChange={(e) => setPin(e.target.value)} className="mt-5 text-center tracking-[.5em]" placeholder="••••••" />
+          <Input type="password" kind="digits" maxLength={8} autoFocus value={pin} onChange={(e) => setPin(e.target.value)} className="mt-5 text-center tracking-[.5em]" placeholder="••••••" />
           <Button block variant="accent" className="mt-3">{tr('Enter', 'دخول')}</Button>
           <Link to="/" className="block text-white/50 text-sm mt-6">{tr('Back', 'رجوع')}</Link>
         </form>

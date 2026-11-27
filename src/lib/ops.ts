@@ -278,10 +278,12 @@ export function totals(d: Demo, fulfillment: Fulfillment, zoneId?: string, tipPc
 
 export function placeOrder(
   d: Demo,
-  input: { fulfillment: Fulfillment; zoneId?: string; address?: string; table?: string; payment: PaymentKey; note?: string; tipPct?: number; scheduledFor?: number },
+  input: { fulfillment: Fulfillment; zoneId?: string; address?: string; table?: string; payment: PaymentKey; note?: string; tipPct?: number; scheduledFor?: number; name?: string; phone?: string },
 ): Order {
   const t = totals(d, input.fulfillment, input.zoneId, input.tipPct ?? 0);
   const c = me(d);
+  if (input.name?.trim()) c.name = input.name.trim();
+  if (input.phone?.trim()) c.phone = input.phone.trim();
   if (input.payment === 'wallet') {
     c.wallet = round2(c.wallet - t.total);
     d.data.walletTx.unshift({ id: uid('w'), customerId: c.id, amount: -t.total, kind: 'payment', note: `Order #${d.data.nextOrderNumber}`, at: Date.now() });
@@ -301,7 +303,7 @@ export function placeOrder(
   }
   const now = Date.now();
   const o: Order = {
-    id: uid('o'), number: d.data.nextOrderNumber++, customerId: c.id, customerName: c.name, items,
+    id: uid('o'), number: d.data.nextOrderNumber++, customerId: c.id, customerName: c.name, phone: c.phone || undefined, items,
     subtotal: t.subtotal, discount: t.discount, deliveryFee: t.deliveryFee, tax: t.tax, total: t.total,
     fulfillment: input.fulfillment, zoneId: input.zoneId, address: input.address, table: input.table,
     payment: input.payment, paid: input.payment !== 'cash', status: 'pending', history: [{ status: 'pending', at: now }],

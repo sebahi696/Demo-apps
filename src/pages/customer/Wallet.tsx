@@ -61,7 +61,7 @@ export function Wallet() {
               <button key={v} onClick={() => setAmount(v)} className={cx('rounded-app border-2 py-3 font-bold', amount === v ? 'border-brand bg-brand/5 text-brand' : 'border-gray-200 bg-white')}>{m(v)}</button>
             ))}
           </div>
-          <Field label={tr('To', 'إلى')}><Input value={to} onChange={(e) => setTo(e.target.value)} placeholder={tr('Friend’s name', 'اسم الصديق')} /></Field>
+          <Field label={tr('To', 'إلى')}><Input kind="name" value={to} onChange={(e) => setTo(e.target.value)} placeholder={tr('Friend’s name', 'اسم الصديق')} /></Field>
           <Field label={tr('Message', 'الرسالة')}><Textarea value={msg} onChange={(e) => setMsg(e.target.value)} placeholder={tr('Happy birthday! ☕', 'عيد ميلاد سعيد! ☕')} className="!min-h-[64px]" /></Field>
           <Button block size="lg" icon={<Gift size={18} />} disabled={!to.trim()} onClick={() => {
             let g: GiftCard | null = null;
@@ -82,7 +82,7 @@ export function Wallet() {
           if (res.ok) { toast(tr(`${m(res.amount!)} added to your wallet 🎉`, `تمت إضافة ${m(res.amount!)} إلى محفظتك 🎉`)); setCodeIn(''); }
           else toast(tl(res.error), 'error');
         }}>
-          <Field label={tr('Gift card code', 'رمز بطاقة الهدية')}><Input value={codeIn} onChange={(e) => setCodeIn(e.target.value.toUpperCase())} placeholder="GIFT-XXXXXX" className="font-mono" dir="ltr" /></Field>
+          <Field label={tr('Gift card code', 'رمز بطاقة الهدية')}><Input kind="code" value={codeIn} onChange={(e) => setCodeIn(e.target.value)} placeholder="GIFT-XXXXXX" className="font-mono" dir="ltr" /></Field>
           <Button block size="lg" className="mt-3">{tr('Redeem', 'استرداد')}</Button>
           {!CLIENT_MODE && data.giftCards.filter((g) => !g.redeemedBy).length > 0 && (
             <div className="mt-3 text-xs text-gray-500">{tr('Demo shortcut:', 'اختصار التجربة:')} {data.giftCards.filter((g) => !g.redeemedBy).slice(0, 3).map((g) => (

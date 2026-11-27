@@ -56,7 +56,7 @@ export function clientDemo(p: ClientPackage): Demo {
   config.expiresAt = Date.now() + 3650 * DAY;
   config.noSync = true;
   const base = buildData(config);
-  const me = { ...base.customers[0], name: config.defaultLang === 'ar' ? 'ضيف' : 'Guest', points: 0, lifetimePoints: 0, stamps: 0, wallet: 0 };
+  const me = { ...base.customers[0], name: config.defaultLang === 'ar' ? 'ضيف' : 'Guest', phone: '', points: 0, lifetimePoints: 0, stamps: 0, wallet: 0 };
   const data: DemoData = migrateData({
     ...base,
     ...structuredClone(p.catalog),

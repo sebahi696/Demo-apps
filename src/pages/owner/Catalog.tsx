@@ -78,14 +78,19 @@ function ProductEditor({ p: initial, onClose }: { p: Product; onClose: () => voi
   const set = (v: Partial<Product>) => setP((x) => ({ ...x, ...v }));
 
   const save = () => {
-    if (!p.name.en.trim()) return toast(tr('Add a name', 'أضف اسماً'), 'error');
+    if (p.name.en.trim().length < 2) return toast(tr('Add a name (at least 2 letters)', 'أضف اسماً (حرفان على الأقل)'), 'error');
+    if (!Number.isFinite(p.price) || p.price < 0) return toast(tr('Enter a valid price', 'أدخل سعراً صحيحاً'), 'error');
+    if (p.compareAt !== undefined && p.compareAt <= p.price) return toast(tr('“Was” price must be higher than the price', 'السعر السابق يجب أن يكون أعلى من السعر'), 'error');
+    if (p.groups.some((g) => !g.name.en.trim() || g.options.some((o) => !o.name.en.trim()))) return toast(tr('Name every option group and option', 'سمِّ كل مجموعة خيارات وكل خيار'), 'error');
+    const clean = { ...p, name: { en: p.name.en.trim(), ar: p.name.ar?.trim() || undefined } };
     update((d) => {
-      const i = d.data.products.findIndex((x) => x.id === p.id);
-      const wasOut = i >= 0 && d.data.products[i].stock === 0;
-      if (i >= 0) d.data.products[i] = p;
-      if (wasOut && (p.stock === null || p.stock > 0)) restocked(d, p.id);
-      else {
-        d.data.products.unshift(p);
+      const i = d.data.products.findIndex((x) => x.id === clean.id);
+      if (i >= 0) {
+        const wasOut = d.data.products[i].stock === 0;
+        d.data.products[i] = clean;
+        if (wasOut && (clean.stock === null || clean.stock > 0)) restocked(d, clean.id);
+      } else {
+        d.data.products.unshift(clean);
         tourDone(d, 'addProduct');
       }
     });
@@ -195,7 +200,7 @@ function ProductEditor({ p: initial, onClose }: { p: Product; onClose: () => voi
                   <div key={o.id} className="flex items-center gap-2">
                     <Input value={o.name.en} onChange={(e) => setGroup(gi, { options: g.options.map((x, i) => (i === oi ? { ...x, name: { ...x.name, en: e.target.value } } : x)) })} className="!h-9 flex-1" />
                     <Input dir="rtl" value={o.name.ar ?? ''} onChange={(e) => setGroup(gi, { options: g.options.map((x, i) => (i === oi ? { ...x, name: { ...x.name, ar: e.target.value } } : x)) })} className="!h-9 flex-1" />
-                    <Input type="number" step="0.1" value={o.priceDelta} onChange={(e) => setGroup(gi, { options: g.options.map((x, i) => (i === oi ? { ...x, priceDelta: parseFloat(e.target.value) || 0 } : x)) })} className="!h-9 !w-20" />
+                    <Input type="number" step="0.1" min={-1000} value={o.priceDelta} onChange={(e) => setGroup(gi, { options: g.options.map((x, i) => (i === oi ? { ...x, priceDelta: parseFloat(e.target.value) || 0 } : x)) })} className="!h-9 !w-20" />
                     <button className="text-gray-400" onClick={() => setGroup(gi, { options: g.options.filter((_, i) => i !== oi) })}><X size={16} /></button>
                   </div>
                 ))}

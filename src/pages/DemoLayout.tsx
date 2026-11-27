@@ -101,6 +101,13 @@ function DemoShell() {
 
   useSimulation();
 
+  // On phones the checklist covers the app, so it closes whenever the screen changes.
+  const firstPath = useRef(true);
+  useEffect(() => {
+    if (firstPath.current) return void (firstPath.current = false);
+    if (window.innerWidth < 640) setTourOpen(false);
+  }, [loc.pathname]);
+
   const expired = !CLIENT_MODE && cfg.expiresAt < Date.now();
 
   if (CLIENT_MODE && role !== 'customer' && !EMBEDDED && sessionStorage.getItem('gate-' + role) !== '1') return <ClientGate role={role} onOk={() => setGateTick((x) => x + 1)} />;
@@ -198,8 +205,8 @@ function DemoBar({ role, onTour }: { role: Role; onTour: () => void }) {
 
   return (
     <>
-      <div className="no-print shrink-0 bg-gray-950 text-white h-12 flex items-center gap-2 px-2 sm:px-3 z-40">
-        <Link to="/" className="h-9 w-9 grid place-items-center rounded-full hover:bg-white/10 shrink-0" title={PLATFORM.name}>
+      <div className="no-print shrink-0 bg-gray-950 text-white h-12 flex items-center gap-1 sm:gap-2 px-1.5 sm:px-3 z-40">
+        <Link to="/" className="h-9 w-8 sm:w-9 grid place-items-center rounded-full hover:bg-white/10 shrink-0" title={PLATFORM.name}>
           <Home size={17} />
         </Link>
         <div className="hidden md:flex items-center gap-2 min-w-0">
@@ -207,18 +214,18 @@ function DemoBar({ role, onTour }: { role: Role; onTour: () => void }) {
           <span className="rounded-full bg-amber-400 text-gray-900 text-[10px] font-extrabold px-2 py-0.5 tracking-wide">DEMO</span>
           <span className="text-xs text-white/50 whitespace-nowrap">{tr(`${days}d left`, `متبقٍ ${days} يوم`)}</span>
         </div>
-        <div className="flex-1 flex justify-center">
-          <div className="flex rounded-full bg-white/10 p-0.5">
+        <div className="flex-1 min-w-0 flex justify-center">
+          <div className="flex rounded-full bg-white/10 p-0.5 max-w-full">
             {roles.map((x) => (
               <button key={x.r} onClick={() => go(x.r)}
-                className={cx('flex items-center gap-1.5 rounded-full px-3 sm:px-3.5 h-8 text-sm font-semibold transition', role === x.r ? 'bg-white text-gray-900' : 'text-white/70 hover:text-white')}>
+                className={cx('flex items-center gap-1.5 rounded-full px-2.5 sm:px-3.5 h-8 text-sm font-semibold transition shrink-0', role === x.r ? 'bg-white text-gray-900' : 'text-white/70 hover:text-white')}>
                 {x.icon}
                 <span className={cx(role === x.r ? 'inline' : 'hidden sm:inline')}>{x.label}</span>
               </button>
             ))}
           </div>
         </div>
-        <button onClick={onTour} className="h-9 px-2.5 rounded-full hover:bg-white/10 flex items-center gap-1.5 text-sm font-semibold shrink-0">
+        <button onClick={onTour} aria-label={tr('Guided tour', 'الجولة')} className="h-9 px-1.5 sm:px-2.5 rounded-full hover:bg-white/10 flex items-center gap-1.5 text-sm font-semibold shrink-0">
           <ListChecks size={17} className="text-amber-400" />
           <span className="tabular-nums">{done}/{tour.length}</span>
         </button>
@@ -226,7 +233,7 @@ function DemoBar({ role, onTour }: { role: Role; onTour: () => void }) {
           {lang === 'en' ? 'ع' : 'EN'}
         </button>
         <div className="relative shrink-0">
-          <button onClick={() => setMenu((v) => !v)} className="h-9 w-9 grid place-items-center rounded-full hover:bg-white/10"><MoreHorizontal size={18} /></button>
+          <button onClick={() => setMenu((v) => !v)} aria-label={tr('More', 'المزيد')} className="h-9 w-8 sm:w-9 grid place-items-center rounded-full hover:bg-white/10"><MoreHorizontal size={18} /></button>
           {menu && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setMenu(false)} />

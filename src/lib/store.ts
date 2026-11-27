@@ -103,3 +103,4 @@ channel?.addEventListener('message', async (e) => {
 });
 
 export const toast = (text: string, tone?: 'ok' | 'info' | 'error') => useStore.getState().toast(text, tone);
+(window as unknown as { __ds?: unknown }).__ds = useStore;

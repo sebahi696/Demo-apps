@@ -1,8 +1,9 @@
-import { forwardRef, useEffect, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
+import { forwardRef, useEffect, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
 import { createPortal } from 'react-dom';
 import clsx from 'clsx';
 import { X } from 'lucide-react';
 import { useStore } from '../lib/store';
+import { cleanDecimal, cleanDigits, cleanName, cleanPhone, isEmail, isPhone } from '../lib/validate';
 
 export const cx = clsx;
 
@@ -60,9 +61,92 @@ export function Field({ label, hint, children, className }: { label?: ReactNode;
 const inputCls =
   'w-full h-11 px-3 rounded-app border border-gray-200 bg-white text-[15px] outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 placeholder:text-gray-400';
 
-export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(({ className, ...p }, ref) => (
-  <input ref={ref} className={cx(inputCls, className)} {...p} />
-));
+export type InputKind = 'phone' | 'email' | 'pin' | 'digits' | 'decimal' | 'name' | 'code';
+type InputProps = InputHTMLAttributes<HTMLInputElement> & {
+  /** Restricts what can be typed and sets the right keyboard. type="tel"/"email" imply phone/email. */
+  kind?: InputKind;
+  /** Shows a red outline; pass a string to also show a message under the field. */
+  invalid?: boolean | string;
+};
+
+/**
+ * One input for the whole app. It cleans what is typed before the change handler sees it:
+ * phone fields keep digits/+/spaces only, number fields never go below `min` (default 0) or
+ * above `max`, letters like "e" are blocked, Arabic-Indic digits are converted, and the
+ * mouse wheel no longer changes numbers by accident.
+ */
+export const Input = forwardRef<HTMLInputElement, InputProps>(({ className, kind, invalid, onChange, onKeyDown, onBlur, ...p }, ref) => {
+  const k: InputKind | undefined = kind ?? (p.type === 'tel' ? 'phone' : p.type === 'email' ? 'email' : undefined);
+  const isNum = p.type === 'number';
+  const min = p.min !== undefined ? Number(p.min) : 0;
+  const max = p.max !== undefined ? Number(p.max) : undefined;
+  const [touched, setTouched] = useState(false);
+  const emailBad = k === 'email' && touched && !!p.value && !isEmail(String(p.value));
+  const phoneBad = k === 'phone' && touched && !!p.value && !isPhone(String(p.value));
+  const bad = !!invalid || emailBad || phoneBad;
+  const msg = typeof invalid === 'string' ? invalid : undefined;
+  const extra: InputHTMLAttributes<HTMLInputElement> = {};
+  if (k === 'phone') Object.assign(extra, { inputMode: 'tel', autoComplete: 'tel', dir: 'ltr', maxLength: 20 });
+  if (k === 'email') Object.assign(extra, { inputMode: 'email', autoComplete: 'email', dir: 'ltr', autoCapitalize: 'none', spellCheck: false });
+  if (k === 'pin' || k === 'digits') Object.assign(extra, { inputMode: 'numeric', dir: 'ltr', autoComplete: 'off' });
+  if (k === 'decimal') Object.assign(extra, { inputMode: 'decimal', dir: 'ltr' });
+  if (k === 'name') Object.assign(extra, { autoComplete: 'name', maxLength: 60 });
+  if (isNum) Object.assign(extra, { inputMode: (p.step && String(p.step).includes('.')) || k === 'decimal' ? 'decimal' : 'numeric', min, dir: 'ltr' });
+  const el = (
+    <input
+      ref={ref}
+      {...extra}
+      {...p}
+      aria-invalid={bad || undefined}
+      className={cx(inputCls, bad && '!border-rose-400 focus:!ring-rose-200', isNum && 'tabular-nums', className)}
+      onWheel={isNum ? (e) => (e.target as HTMLInputElement).blur() : p.onWheel}
+      onKeyDown={(e) => {
+        if (isNum && ['e', 'E', '+'].includes(e.key)) e.preventDefault();
+        if (isNum && e.key === '-' && min >= 0) e.preventDefault();
+        onKeyDown?.(e);
+      }}
+      onBlur={(e) => {
+        setTouched(true);
+        if (k === 'email' && e.target.value !== e.target.value.trim()) {
+          e.target.value = e.target.value.trim();
+          onChange?.(e as unknown as React.ChangeEvent<HTMLInputElement>);
+        }
+        if (isNum && e.target.value !== '' && Number(e.target.value) < min) {
+          e.target.value = String(min);
+          onChange?.(e as unknown as React.ChangeEvent<HTMLInputElement>);
+        }
+        onBlur?.(e);
+      }}
+      onChange={(e) => {
+        const t = e.target;
+        const v = t.value;
+        let nv = v;
+        if (k === 'phone') nv = cleanPhone(v);
+        else if (k === 'pin') nv = cleanDigits(v, p.maxLength ?? 6);
+        else if (k === 'digits') nv = cleanDigits(v, p.maxLength ?? 12);
+        else if (k === 'decimal') nv = cleanDecimal(v);
+        else if (k === 'name') nv = cleanName(v);
+        else if (k === 'code') nv = v.toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 24);
+        if (isNum && v !== '') {
+          const n = Number(v);
+          if (!Number.isFinite(n)) nv = '';
+          else if (n < 0 && min >= 0) nv = String(min);
+          else if (max !== undefined && n > max) nv = String(max);
+          else if (/^-?0\d/.test(v)) nv = String(n);
+        }
+        if (nv !== v) t.value = nv;
+        onChange?.(e);
+      }}
+    />
+  );
+  if (!msg || !bad) return el;
+  return (
+    <span className="block">
+      {el}
+      <span className="block text-xs text-rose-600 mt-1">{msg}</span>
+    </span>
+  );
+});
 export const Textarea = ({ className, ...p }: TextareaHTMLAttributes<HTMLTextAreaElement>) => (
   <textarea className={cx(inputCls, 'h-auto py-2.5 min-h-[88px]', className)} {...p} />
 );
@@ -77,8 +161,10 @@ export function Toggle({ checked, onChange, label, desc, disabled }: { checked: 
     <button
       type="button"
       disabled={disabled}
+      role="switch"
+      aria-checked={checked}
       onClick={() => onChange(!checked)}
-      className={cx('flex w-full items-center gap-3 text-start', disabled && 'opacity-50')}
+      className={cx('flex items-center gap-3 text-start', label || desc ? 'w-full' : 'shrink-0', disabled && 'opacity-50')}
     >
       {(label || desc) && (
         <span className="flex-1 min-w-0">

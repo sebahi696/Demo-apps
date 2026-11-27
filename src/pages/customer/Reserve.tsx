@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { isName, isPhone } from '../../lib/validate';
 import { CalendarCheck, Users, Clock } from 'lucide-react';
 import { useDemo } from '../../lib/demo';
 import { toast } from '../../lib/store';
@@ -28,11 +29,14 @@ export default function Reserve() {
   const [name, setName] = useState(c.name);
   const [phone, setPhone] = useState(c.phone);
   const [note, setNote] = useState('');
+  const [tried, setTried] = useState(false);
   const slots = slotsFor(demo, date);
   const mine = data.reservations.filter((r) => r.customerId === data.meId).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
 
   const book = () => {
     if (!time) return toast(tr('Pick a time', 'اختر وقتاً'), 'error');
+    setTried(true);
+    if (!isName(name) || !isPhone(phone)) return toast(tr('Please add your name and a valid phone number.', 'يرجى إدخال اسمك ورقم هاتف صحيح.'), 'error');
     let res = { ok: false, error: { en: '', ar: '' } } as ReturnType<typeof createReservation>;
     update((d) => void (res = createReservation(d, { date, time, party, name, phone, note: note || undefined })));
     if (res.ok) {
@@ -93,8 +97,8 @@ export default function Reserve() {
       {slots.every((s) => s.left <= 0 || s.past) && <div className="text-sm text-gray-500 mt-2">{tr('No times left on this day.', 'لا توجد أوقات متاحة في هذا اليوم.')}</div>}
 
       <div className="mt-5 space-y-3">
-        <Field label={tr('Name', 'الاسم')}><Input value={name} onChange={(e) => setName(e.target.value)} /></Field>
-        <Field label={tr('Phone', 'الهاتف')}><Input dir="ltr" value={phone} onChange={(e) => setPhone(e.target.value)} /></Field>
+        <Field label={tr('Name', 'الاسم')}><Input kind="name" value={name} onChange={(e) => setName(e.target.value)} invalid={tried && !isName(name) && tr('Enter your name.', 'أدخل اسمك.')} /></Field>
+        <Field label={tr('Phone', 'الهاتف')}><Input type="tel" value={phone} placeholder="+961 70 123 456" onChange={(e) => setPhone(e.target.value)} invalid={tried && !isPhone(phone) && tr('Enter a valid phone number.', 'أدخل رقم هاتف صحيحاً.')} /></Field>
         <Field label={tr('Note (optional)', 'ملاحظة (اختياري)')}><Input value={note} onChange={(e) => setNote(e.target.value)} placeholder={tr('Birthday, high chair, window seat…', 'عيد ميلاد، كرسي أطفال، بجانب النافذة…')} /></Field>
       </div>
       <Button block size="lg" className="mt-5" onClick={book} disabled={!time}>

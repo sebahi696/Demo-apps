@@ -43,7 +43,7 @@ export function Riders() {
               <div className="flex items-center gap-3">
                 <span className="h-11 w-11 rounded-full bg-brand text-onbrand grid place-items-center font-bold">{x.name[0]}</span>
                 <div className="flex-1 min-w-0">
-                  <Input value={x.name} onChange={(e) => update((d) => void (d.data.riders[i].name = e.target.value))} className="!h-8 !px-2 font-semibold" />
+                  <Input kind="name" value={x.name} onChange={(e) => update((d) => void (d.data.riders[i].name = e.target.value))} className="!h-8 !px-2 font-semibold" />
                   <div className="text-xs text-gray-500 mt-1 flex items-center gap-2">
                     <Badge className={x.onShift ? 'bg-emerald-100 text-emerald-800' : ''}>{x.onShift ? tr('On shift', 'في المناوبة') : tr('Off', 'خارج')}</Badge>
                     {act > 0 && <Badge className="bg-cyan-100 text-cyan-800"><Bike size={11} /> {act}</Badge>}

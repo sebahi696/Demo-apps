@@ -216,7 +216,7 @@ function Title({ children, action }: { children: React.ReactNode; action?: React
   );
 }
 
-export function LoyaltyCard() {
+export function LoyaltyCard({ hideStamps }: { hideStamps?: boolean } = {}) {
   const { demo, cfg, data, tr, tl } = useDemo();
   const nav = useNavigate();
   const c = me(demo);
@@ -246,7 +246,7 @@ export function LoyaltyCard() {
           {nt && <div className="text-[11px] text-gray-400 mt-1">{tr(`${nt.minPoints - c.lifetimePoints} lifetime points to ${tl(nt.name)}`, `${nt.minPoints - c.lifetimePoints} نقطة للوصول إلى ${tl(nt.name)}`)}</div>}
         </>
       )}
-      {cfg.modules.loyaltyStamps && (
+      {cfg.modules.loyaltyStamps && !(hideStamps && cfg.modules.loyaltyPoints) && (
         <div className={cx(cfg.modules.loyaltyPoints && 'mt-4 pt-4 border-t border-gray-100')}>
           <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
             <span>{tr('Stamp card', 'بطاقة الأختام')}</span>

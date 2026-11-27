@@ -116,3 +116,10 @@ Schema `demo_studio` (table `leads`, locked with RLS) plus RPC functions `demo_s
 * Extending a trial (+7) in the Sales console reaches the client's phone the next time they open the app.
 * "Preview" opens a private copy of a client's demo on your device, and that copy is never reported back.
 * On iPhone, PWA push notifications only work after "Add to Home Screen" (iOS 16.4+). In-app notifications always work.
+
+## v4.1 — audit fixes
+- One smart input for the whole app: phone fields accept only digits, `+`, spaces and dashes (Arabic digits converted), 7–15 digits required; emails checked; PINs digits-only; number fields block letters/negatives, clamp to min/max, ignore the mouse wheel.
+- Inline red errors on the wizard, reservation and checkout. Checkout now asks name + phone for delivery/pickup; staff and riders see the phone and can tap to call.
+- Fixed: editing a product duplicated it in the menu. Deals reject duplicate codes and percent > 100. Campaigns can't be sent to an empty audience. Duplicate staff PINs are flagged.
+- Money in Arabic no longer flips ("$US"); LBP shows as "LBP"/"ل.ل".
+- Mobile demo bar no longer overflows; the checklist closes when you change screens on a phone. Switches no longer stretch rows. Printed tickets are HTML-escaped.

@@ -88,7 +88,7 @@ export function Account() {
               update((d) => void (r = applyReferral(d, refIn)));
               if (r.ok) { toast(tr(`+${cfg.loyalty.referralBonus} points!`, `+${cfg.loyalty.referralBonus} نقطة!`)); setRefIn(''); } else toast(tl(r.error), 'error');
             }}>
-              <Input value={refIn} onChange={(e) => setRefIn(e.target.value.toUpperCase())} placeholder={tr('Friend’s code', 'رمز صديقك')} className="!bg-white !text-gray-900 font-mono" dir="ltr" />
+              <Input kind="code" value={refIn} onChange={(e) => setRefIn(e.target.value)} placeholder={tr('Friend’s code', 'رمز صديقك')} className="!bg-white !text-gray-900 font-mono" dir="ltr" />
               <Button type="submit" variant="accent">{tr('Apply', 'تطبيق')}</Button>
             </form>
           )}
@@ -137,7 +137,7 @@ export function Account() {
 
       <Modal open={edit} onClose={() => setEdit(false)} contained title={tr('Edit profile', 'تعديل الملف')}
         footer={<Button block onClick={() => { update((d) => void (me(d).name = name.trim() || me(d).name)); setEdit(false); }}>{tr('Save', 'حفظ')}</Button>}>
-        <Input value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+        <Input kind="name" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
       </Modal>
       <InstallModal open={install} onClose={() => setInstall(false)} />
       <Modal open={del} onClose={() => setDel(false)} contained title={tr('Delete account?', 'حذف الحساب؟')}

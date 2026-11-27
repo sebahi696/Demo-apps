@@ -25,7 +25,7 @@ export function Rewards() {
 
   return (
     <Screen title={tr('Rewards', 'المكافآت')}>
-      <LoyaltyCard />
+      <LoyaltyCard hideStamps />
       <Button block size="lg" className="mt-3" icon={<QrCode size={20} />} onClick={() => nav('../scan')}>{tr('Scan to earn points', 'امسح لكسب النقاط')}</Button>
 
       {cfg.modules.loyaltyStamps && (
@@ -216,7 +216,7 @@ export function ScanEarn() {
           </Field>
           {cfg.loyalty.staticQr.requirePin && (
             <Field label={tr('Staff PIN', 'رمز الموظف')} hint={tr(`Ask the cashier. Demo PIN: ${cfg.loyalty.staticQr.pin}`, `اطلبه من الكاشير. رمز التجربة: ${cfg.loyalty.staticQr.pin}`)}>
-              <Input inputMode="numeric" value={pin} onChange={(e) => setPin(e.target.value)} />
+              <Input kind="pin" maxLength={6} value={pin} onChange={(e) => setPin(e.target.value)} />
             </Field>
           )}
           <p className="text-xs text-gray-500">{tr(`Limits: ${cfg.loyalty.staticQr.dailyLimit} scans per day, ${cfg.loyalty.staticQr.cooldownMinutes} min apart.`, `الحدود: ${cfg.loyalty.staticQr.dailyLimit} مسح يومياً، بفاصل ${cfg.loyalty.staticQr.cooldownMinutes} دقيقة.`)}</p>

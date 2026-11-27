@@ -1,3 +1,4 @@
+import { toAsciiDigits } from '../../lib/validate';
 import { useState } from 'react';
 import QRCodeLib from 'qrcode';
 import { Star, Printer, Plus, Trash2, PauseCircle, MessageSquare } from 'lucide-react';
@@ -91,8 +92,9 @@ export function WalletAdmin() {
         <Card className="p-5 space-y-3">
           <div className="font-bold">{tr('Top-up options', 'خيارات الشحن')}</div>
           <Field label={tr('Amounts (comma separated)', 'المبالغ (مفصولة بفواصل)')}>
-            <Input defaultValue={cfg.wallet.topUps.join(', ')} onBlur={(e) => {
-              const v = e.target.value.split(',').map((x) => parseFloat(x)).filter((x) => x > 0).slice(0, 4);
+            <Input dir="ltr" defaultValue={cfg.wallet.topUps.join(', ')} onBlur={(e) => {
+              const v = [...new Set(toAsciiDigits(e.target.value).split(/[,،\s]+/).map((x) => parseFloat(x)).filter((x) => x > 0 && x <= 100000))].sort((a, b) => a - b).slice(0, 4);
+              e.target.value = (v.length ? v : cfg.wallet.topUps).join(', ');
               if (v.length) set((d) => void (d.config.wallet.topUps = v));
             }} />
           </Field>

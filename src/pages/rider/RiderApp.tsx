@@ -88,12 +88,12 @@ function RiderHome({ riderId, onLogout }: { riderId: string; onLogout: () => voi
                     <span className="text-xs rounded-full bg-cyan-100 text-cyan-800 px-2 py-0.5 font-bold">{tr(`~${etaMinutes(o, zoneEta(o.zoneId))} min`, `~${etaMinutes(o, zoneEta(o.zoneId))} د`)}</span>
                     <span className="ms-auto font-bold tabular-nums">{m(o.total)}</span>
                   </div>
-                  <div className="mt-1 font-semibold">{o.customerName}</div>
+                  <div className="mt-1 font-semibold">{o.customerName}{o.phone && <span dir="ltr" className="ms-2 text-sm font-normal text-gray-500">{o.phone}</span>}</div>
                   <div className="text-sm text-gray-500">📍 {o.address || '—'}</div>
                   <div className="text-xs text-gray-500 mt-1">{o.items.map((i) => `${i.qty}× ${tl(i.name)}`).join(', ')}</div>
                   <div className="grid grid-cols-2 gap-2 mt-3">
                     <a href={`https://www.google.com/maps/search/${encodeURIComponent(o.address ?? '')}`} target="_blank" rel="noreferrer"><Button block size="sm" variant="outline" icon={<Navigation size={14} />}>{tr('Navigate', 'الاتجاهات')}</Button></a>
-                    <Button size="sm" variant="outline" icon={<Phone size={14} />} onClick={() => toast(tr('Calling the customer… (demo)', 'جارٍ الاتصال بالزبون… (تجربة)'), 'info')}>{tr('Call', 'اتصال')}</Button>
+                    {o.phone ? <a href={`tel:${o.phone.replace(/[^\d+]/g, '')}`}><Button block size="sm" variant="outline" icon={<Phone size={14} />}>{tr('Call', 'اتصال')}</Button></a> : <Button size="sm" variant="outline" disabled icon={<Phone size={14} />}>{tr('No phone', 'لا هاتف')}</Button>}
                   </div>
                   {needCash ? (
                     <Button block className="mt-2" icon={<Banknote size={16} />} onClick={() => { update((d) => collectCash(d, o.id)); toast(tr(`${m(o.total)} collected`, `تم استلام ${m(o.total)}`)); }}>

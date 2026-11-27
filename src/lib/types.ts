@@ -275,6 +275,7 @@ export interface Order {
   number: number;
   customerId: string;
   customerName: string;
+  phone?: string;
   items: OrderItem[];
   subtotal: number;
   discount: number;

@@ -1,3 +1,4 @@
+import { isName, isPhone } from '../../lib/validate';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Tag, Ticket, Truck, Store, UtensilsCrossed, CreditCard, Banknote, Check, ShieldCheck, Trash2, Wallet, Clock, PauseCircle, HeartHandshake } from 'lucide-react';
@@ -59,7 +60,7 @@ export function Cart() {
             e.preventDefault();
             update((d) => void (d.data.cart.couponCode = code.trim().toUpperCase() || undefined));
           }}>
-            <Input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="WELCOME20" className="font-mono uppercase" dir="ltr" />
+            <Input kind="code" value={code} onChange={(e) => setCode(e.target.value)} placeholder="WELCOME20" className="font-mono uppercase" dir="ltr" />
             {data.cart.couponCode ? (
               <Button type="button" variant="outline" onClick={() => { setCode(''); update((d) => void (d.data.cart.couponCode = undefined)); }}>{tr('Remove', 'إزالة')}</Button>
             ) : (
@@ -117,7 +118,11 @@ export function Checkout() {
   const [tipPct, setTipPct] = useState(0);
   const status = storeStatus(demo);
   const [zone, setZone] = useState(cfg.fulfillment.zones[0]?.id);
-  const [address, setAddress] = useState('');
+  const [address, setAddress] = useState(() => [...data.orders].find((o) => o.customerId === data.meId && o.address)?.address ?? '');
+  const [cName, setCName] = useState(() => (me(demo).name === 'Guest' || me(demo).name === 'ضيف' ? '' : me(demo).name));
+  const [cPhone, setCPhone] = useState(() => me(demo).phone ?? '');
+  const [tried, setTried] = useState(false);
+  const needContact = f !== 'dineIn';
   const [table, setTable] = useState(data.cart.table ?? '');
   const [when, setWhen] = useState<'asap' | number>('asap');
   const pays = (Object.keys(cfg.payments) as PaymentKey[]).filter((k) => cfg.payments[k] && (k !== 'wallet' || cfg.modules.wallet));
@@ -144,6 +149,8 @@ export function Checkout() {
     if (status.paused) return toast(tr('The store is not taking orders right now', 'المتجر لا يستقبل الطلبات حالياً'), 'error');
     if (pay === 'wallet' && c.wallet < t.total) return toast(tr('Not enough wallet balance — top up first', 'رصيد المحفظة غير كافٍ — اشحنها أولاً'), 'error');
     if (t.minOrderError) return toast(tl(t.minOrderError), 'error');
+    setTried(true);
+    if (needContact && (!isName(cName) || !isPhone(cPhone))) return toast(tr('Please add your name and a valid phone number', 'يرجى إدخال اسمك ورقم هاتف صحيح'), 'error');
     if (f === 'delivery' && address.trim().length < 4) return toast(tr('Please enter your address', 'يرجى إدخال عنوانك'), 'error');
     if (f === 'dineIn' && !table.trim()) return toast(tr('Please enter your table number', 'يرجى إدخال رقم الطاولة'), 'error');
     setPaying(true);
@@ -153,7 +160,7 @@ export function Checkout() {
     let id = '';
     placed.current = true;
     const preNote = !status.open && when === 'asap' ? `Pre-order for opening (${status.opensAt})` : '';
-    update((d) => void (id = placeOrder(d, { fulfillment: f, zoneId: f === 'delivery' ? zone : undefined, address, table, payment: pay, tipPct, scheduledFor: typeof when === 'number' ? when : undefined, note: [note, preNote].filter(Boolean).join(' · ') || undefined }).id));
+    update((d) => void (id = placeOrder(d, { fulfillment: f, zoneId: f === 'delivery' ? zone : undefined, address: f === 'delivery' ? address.trim() : undefined, table: f === 'dineIn' ? table : undefined, name: needContact ? cName : undefined, phone: needContact ? cPhone : undefined, payment: pay, tipPct, scheduledFor: typeof when === 'number' ? when : undefined, note: [note, preNote].filter(Boolean).join(' · ') || undefined }).id));
     setPaying(false);
     nav(`../orders/${id}?new=1`, { replace: true });
   };
@@ -193,7 +200,8 @@ export function Checkout() {
                 </button>
               ))}
             </div>
-            <Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder={tr('Street, building, floor', 'الشارع، المبنى، الطابق')} />
+            <Input value={address} maxLength={160} autoComplete="street-address" onChange={(e) => setAddress(e.target.value)} placeholder={tr('Street, building, floor', 'الشارع، المبنى، الطابق')}
+              invalid={tried && address.trim().length < 4 && tr('Enter your street, building and floor.', 'أدخل الشارع والمبنى والطابق.')} />
             {cfg.fulfillment.freeDeliveryOver > 0 && t.subtotal < cfg.fulfillment.freeDeliveryOver && (
               <div className="text-xs text-emerald-700">{tr(`Add ${m(cfg.fulfillment.freeDeliveryOver - t.subtotal)} more for free ${tl(terms.delivery).toLowerCase()}`, `أضف ${m(cfg.fulfillment.freeDeliveryOver - t.subtotal)} لتحصل على ${tl(terms.delivery)} مجاني`)}</div>
             )}
@@ -204,10 +212,17 @@ export function Checkout() {
         {f === 'dineIn' && (
           <>
             <div className="font-bold">{tr('Table number', 'رقم الطاولة')}</div>
-            <Input inputMode="numeric" value={table} onChange={(e) => setTable(e.target.value)} placeholder="12" />
+            <Input kind="digits" maxLength={3} value={table} onChange={(e) => setTable(e.target.value)} placeholder="12" invalid={tried && !table.trim() && tr('Enter your table number.', 'أدخل رقم الطاولة.')} />
           </>
         )}
-        <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder={tr('Note for the store (optional)', 'ملاحظة للمتجر (اختياري)')} />
+        {needContact && (
+          <div className="grid grid-cols-2 gap-2">
+            <div className="col-span-2 font-bold">{tr('Your details', 'بياناتك')}</div>
+            <Input kind="name" value={cName} onChange={(e) => setCName(e.target.value)} placeholder={tr('Full name', 'الاسم الكامل')} invalid={tried && !isName(cName) && tr('Enter your name.', 'أدخل اسمك.')} />
+            <Input type="tel" value={cPhone} onChange={(e) => setCPhone(e.target.value)} placeholder="+961 70 123 456" invalid={tried && !isPhone(cPhone) && tr('Enter a valid phone.', 'أدخل رقماً صحيحاً.')} />
+          </div>
+        )}
+        <Input value={note} maxLength={200} onChange={(e) => setNote(e.target.value)} placeholder={tr('Note for the store (optional)', 'ملاحظة للمتجر (اختياري)')} />
       </div>
 
       {cfg.modules.tips && (

@@ -15,16 +15,26 @@ export const tl = (text: L | undefined, lang: Lang) => (text ? (lang === 'ar' &&
 export const round2 = (n: number) => Math.round(n * 100) / 100;
 
 const zeroDecimal = new Set(['LBP', 'IQD', 'SYP', 'JPY', 'KRW']);
+const AR_SYMBOL: Record<string, string> = { LBP: 'ل.ل', SAR: 'ر.س', AED: 'د.إ', KWD: 'د.ك', QAR: 'ر.ق', BHD: 'د.ب', OMR: 'ر.ع', JOD: 'د.أ', EGP: 'ج.م', IQD: 'د.ع', SYP: 'ل.س', MAD: 'د.م', TND: 'د.ت', DZD: 'د.ج' };
+/**
+ * Money in both languages. Arabic keeps Latin digits (what Gulf/Levant menus use) and is wrapped
+ * in a bidi isolate so "$139.50" never flips into "US$ 139.50" or "$US" inside right-to-left text.
+ */
 export function money(amount: number, currency: string, lang: Lang) {
+  const dec = zeroDecimal.has(currency) ? 0 : 2;
+  const opts = { maximumFractionDigits: dec, minimumFractionDigits: dec === 0 ? 0 : amount % 1 === 0 ? 0 : 2 };
   try {
-    return new Intl.NumberFormat(lang === 'ar' ? 'ar-u-nu-latn' : 'en', {
-      style: 'currency',
-      currency,
-      maximumFractionDigits: zeroDecimal.has(currency) ? 0 : 2,
-      minimumFractionDigits: zeroDecimal.has(currency) ? 0 : amount % 1 === 0 ? 0 : 2,
-    }).format(amount);
+    if (lang === 'ar') {
+      const num = new Intl.NumberFormat('en', opts).format(Math.abs(amount));
+      const sign = amount < 0 ? '-' : '';
+      if (AR_SYMBOL[currency]) return `\u2067${sign}${num} ${AR_SYMBOL[currency]}\u2069`;
+      const sym = new Intl.NumberFormat('en', { style: 'currency', currency, currencyDisplay: 'narrowSymbol' }).formatToParts(0).find((x) => x.type === 'currency')?.value ?? currency;
+      return `\u2066${sign}${sym}${num}\u2069`;
+    }
+    if (currency === 'LBP') return `${amount < 0 ? '-' : ''}LBP ${new Intl.NumberFormat('en', opts).format(Math.abs(amount))}`;
+    return new Intl.NumberFormat('en', { style: 'currency', currency, currencyDisplay: 'narrowSymbol', ...opts }).format(amount);
   } catch {
-    return `${amount.toFixed(2)} ${currency}`;
+    return `${amount.toFixed(dec)} ${currency}`;
   }
 }
 
