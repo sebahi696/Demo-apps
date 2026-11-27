@@ -285,6 +285,7 @@ export default function Wizard() {
               <Q a={a} setA={setA} k="customers" label={tr('Customers per day (approx.)', 'عدد الزبائن يومياً (تقريباً)')} options={['< 50', '50–200', '200–500', '500+']} />
               <Q a={a} setA={setA} k="delivery" label={tr('How do you deliver today?', 'كيف توصّل الطلبات حالياً؟')} options={[tr('Own drivers', 'سائقون خاصون'), tr('Delivery apps', 'تطبيقات توصيل'), tr('Both', 'كلاهما'), tr('No delivery', 'لا يوجد توصيل')]} />
               <Q a={a} setA={setA} k="pos" label={tr('Do you use a POS / cashier system?', 'هل تستخدم نظام كاشير؟')} options={[tr('Yes', 'نعم'), tr('No', 'لا'), tr('Not sure', 'غير متأكد')]} />
+              <Q a={a} setA={setA} k="appType" label={tr('Which kind of app do you prefer?', 'أي نوع من التطبيقات تفضّل؟')} options={[tr('App Store & Google Play', 'App Store و Google Play'), tr('Web app (PWA)', 'تطبيق ويب (PWA)'), tr('Not sure yet', 'لست متأكداً بعد')]} />
               <Q a={a} setA={setA} k="launch" label={tr('When would you like to launch?', 'متى تريد الإطلاق؟')} options={[tr('ASAP', 'في أقرب وقت'), tr('1–2 months', 'شهر إلى شهرين'), tr('3+ months', '3 أشهر أو أكثر'), tr('Just exploring', 'أستكشف فقط')]} />
               <Field label={tr('Anything else we should know?', 'هل هناك شيء آخر يجب أن نعرفه؟')}>
                 <Textarea value={a.lead.answers.notes ?? ''} onChange={(e) => set('lead', { answers: { ...a.lead.answers, notes: e.target.value } })}

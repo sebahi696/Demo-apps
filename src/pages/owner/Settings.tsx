@@ -13,7 +13,7 @@ import { MiniPreview } from '../../components/MiniPreview';
 import { PlanSummary, MODULE_LABELS, PAY_LABEL } from '../../components/PlanSummary';
 import { PageHead } from './OwnerApp';
 import { Bookings } from '../staff/StaffApp';
-import { HoursCard, BranchesCard, TableQrCard } from './Extras';
+import { HoursCard, BranchesCard, TableQrCard, DualCurrencyCard, MenuLinkCard } from './Extras';
 
 const BANNER_BGS = ['#111827', '#7c2d12', '#92400e', '#3f6212', '#0e7490', '#4338ca', '#be185d', '#57534e', '#4a2c20', '#18181b'];
 
@@ -104,7 +104,7 @@ export function Branding() {
             </div>
           </Card>
         </div>
-        <aside className="hidden lg:block"><div className="sticky top-6"><MiniPreview cfg={cfg} /><p className="text-center text-xs text-gray-500 mt-3">{tl(cfg.business.name)}</p></div></aside>
+        <aside className="hidden lg:block"><div className="sticky top-6 space-y-4"><MenuLinkCard /><MiniPreview cfg={cfg} /><p className="text-center text-xs text-gray-500 mt-3">{tl(cfg.business.name)}</p></div></aside>
       </div>
     </>
   );
@@ -178,6 +178,7 @@ export function Settings() {
           </Card>
         )}
 
+        <DualCurrencyCard />
         <BranchesCard />
         {cfg.modules.dineIn && cfg.modules.tableQr && <TableQrCard />}
         {cfg.modules.tips && (

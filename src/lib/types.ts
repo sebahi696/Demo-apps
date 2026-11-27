@@ -9,7 +9,7 @@ export type Lang = 'en' | 'ar';
 export type L = { en: string; ar?: string };
 
 export type Industry = 'restaurant' | 'cafe' | 'retail';
-export type Role = 'customer' | 'staff' | 'owner';
+export type Role = 'customer' | 'staff' | 'rider' | 'owner';
 
 export type ModuleKey =
   | 'ordering'
@@ -121,6 +121,8 @@ export interface DemoConfig {
     bonusPercent: number; // extra credit on top-ups
   };
   tips: number[]; // percent options
+  /** Show prices in a second currency (e.g. Lebanese lira) at the owner's rate */
+  dual: { enabled: boolean; currency: string; rate: number; roundTo: number };
   reservations: {
     slotMinutes: number;
     capacityPerSlot: number;
@@ -164,6 +166,7 @@ export interface Product {
   isNew?: boolean;
   active: boolean;
   stock: number | null; // null = not tracked
+  soldOutAt?: string[]; // branch ids where it is sold out today
   groups: OptionGroup[];
 }
 
@@ -273,9 +276,45 @@ export interface Order {
   stampsEarned: number;
   tip: number;
   branchId?: string;
+  riderId?: string;
+  assignedAt?: number;
+  collected?: number; // cash collected by the rider
+  lostReason?: LostReason;
   rating?: number;
   review?: string;
   reply?: string;
+}
+
+export type LostReason = 'busy' | 'soldOut' | 'outsideArea' | 'closed' | 'customer' | 'other';
+
+export interface Rider {
+  id: string;
+  name: string;
+  phone: string;
+  pin: string;
+  active: boolean;
+  onShift: boolean;
+  shiftStart?: number;
+  branchId?: string;
+}
+
+export interface CashCollection {
+  id: string;
+  riderId: string;
+  orderId: string;
+  orderNumber: number;
+  amount: number;
+  at: number;
+  settled: boolean;
+}
+
+export interface Settlement {
+  id: string;
+  riderId: string;
+  collected: number;
+  counted: number;
+  short: number;
+  at: number;
 }
 
 export type ReservationStatus = 'pending' | 'confirmed' | 'seated' | 'completed' | 'cancelled' | 'noShow';
@@ -330,11 +369,15 @@ export interface Notice {
   read: boolean;
 }
 
+export type Audience = 'all' | 'vip' | 'inactive' | 'regulars' | 'quiet' | 'new' | 'birthdays';
+
 export interface Campaign {
   id: string;
   title: L;
   body: L;
-  audience: 'all' | 'vip' | 'inactive';
+  audience: Audience;
+  code?: string; // offer attached to the message
+  costEstimate?: number;
   reach: number;
   sentAt: number;
 }
@@ -389,6 +432,9 @@ export interface DemoData {
   stockAlerts: string[]; // product ids the demo customer wants to hear about
   giftCards: GiftCard[];
   walletTx: WalletTx[];
+  riders: Rider[];
+  collections: CashCollection[];
+  settlements: Settlement[];
   branchId?: string; // the demo customer's chosen branch
   tour: Record<string, boolean>;
   activity: Record<string, number>;

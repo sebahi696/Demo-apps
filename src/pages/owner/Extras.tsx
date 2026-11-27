@@ -8,6 +8,8 @@ import type { Demo } from '../../lib/types';
 import { timeAgo, uid } from '../../lib/utils';
 import { Button, Card, Field, Input, Stat, Toggle, cx } from '../../components/ui';
 import { PageHead } from './OwnerApp';
+import { QRCode } from '../../components/qr';
+import { shareLink } from '../../lib/share';
 
 export function Reviews() {
   const { data, tr, tl, lang, update } = useDemo();
@@ -203,6 +205,52 @@ export function TableQrCard() {
         <Button className="ms-auto" icon={<Printer size={16} />} onClick={print}>{tr('Print QR sheet', 'اطبع رموز QR')}</Button>
       </div>
       <a href={`#/d/${id}/app/table/5`} className="text-sm text-brand underline">{tr('Try it: open as table 5', 'جرّب: افتح كطاولة 5')}</a>
+    </Card>
+  );
+}
+
+/** Prices in a second currency (lira) at the owner's own rate. */
+export function DualCurrencyCard() {
+  const { cfg, tr, m, m2, update } = useDemo();
+  const x = cfg.dual;
+  const set = (fn: (d: Demo) => void) => update((d) => { fn(d); track(d, 'editSettings'); });
+  return (
+    <Card className="p-5 space-y-3">
+      <Toggle checked={x.enabled} onChange={(v) => set((d) => void (d.config.dual.enabled = v))}
+        label={tr('Show prices in a second currency', 'عرض الأسعار بعملة ثانية')} desc={tr('e.g. dollars and Lebanese lira, at your own rate', 'مثلاً الدولار والليرة اللبنانية، بسعر الصرف الذي تحدده')} />
+      {x.enabled && (
+        <>
+          <div className="grid grid-cols-3 gap-3">
+            <Field label={tr('Currency', 'العملة')}><Input value={x.currency} onChange={(e) => set((d) => void (d.config.dual.currency = e.target.value.toUpperCase().slice(0, 3)))} /></Field>
+            <Field label={tr(`Rate per 1 ${cfg.business.currency}`, `السعر مقابل 1 ${cfg.business.currency}`)}>
+              <Input type="number" value={x.rate} onChange={(e) => set((d) => void (d.config.dual.rate = Math.max(0, +e.target.value)))} />
+            </Field>
+            <Field label={tr('Round to', 'التقريب إلى')}><Input type="number" value={x.roundTo} onChange={(e) => set((d) => void (d.config.dual.roundTo = Math.max(0, +e.target.value)))} /></Field>
+          </div>
+          <div className="rounded-lg bg-gray-50 p-3 text-sm flex justify-between"><span>{tr('Example', 'مثال')}: {m(16)}</span><b>{m2(16)}</b></div>
+          <div className="text-xs text-gray-500">{tr('Change the rate once and every price in the app follows, rounded to real banknotes.', 'غيّر السعر مرة واحدة وتتبعه كل الأسعار، مقرّبة إلى أوراق نقدية حقيقية.')}</div>
+        </>
+      )}
+    </Card>
+  );
+}
+
+/** A link for the Instagram bio, instead of "DM us to order". */
+export function MenuLinkCard() {
+  const { cfg, tr } = useDemo();
+  const link = shareLink(cfg);
+  return (
+    <Card className="p-5">
+      <div className="font-bold">{tr('Order link for Instagram', 'رابط الطلب لإنستغرام')}</div>
+      <p className="text-sm text-gray-500 mt-1">{tr('Put it in your bio and stories, instead of “DM us to order”. It opens your menu and checkout directly.', 'ضعه في البايو والستوري بدل "راسلنا للطلب". يفتح قائمتك والدفع مباشرة.')}</p>
+      <div className="mt-3 flex gap-3 items-center">
+        <div className="rounded-xl border p-2 bg-white"><QRCode value={link} size={96} /></div>
+        <div className="flex-1 min-w-0">
+          <div className="rounded-lg bg-gray-50 px-3 py-2 text-xs font-mono truncate" dir="ltr">{link.slice(0, 64)}…</div>
+          <Button size="sm" variant="outline" className="mt-2" onClick={async () => { await navigator.clipboard?.writeText(link).catch(() => {}); toast(tr('Link copied', 'تم نسخ الرابط')); }}>{tr('Copy link', 'نسخ الرابط')}</Button>
+          <div className="text-[11px] text-gray-400 mt-1">{tr('Live product: a short link like yourbrand.app/order', 'في المنتج الفعلي: رابط قصير مثل yourbrand.app/order')}</div>
+        </div>
+      </div>
     </Card>
   );
 }

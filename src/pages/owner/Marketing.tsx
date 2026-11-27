@@ -3,8 +3,8 @@ import QRCodeLib from 'qrcode';
 import { Plus, Trash2, Printer, Send, Bell } from 'lucide-react';
 import { useDemo } from '../../lib/demo';
 import { toast } from '../../lib/store';
-import { audienceOf, sendCampaign, staticCode, track } from '../../lib/ops';
-import type { Deal, DealKind, Reward } from '../../lib/types';
+import { audienceOf, sendCampaign, staticCode, track, campaignResults } from '../../lib/ops';
+import type { Deal, DealKind, Reward, Audience } from '../../lib/types';
 import { fmtDate, timeAgo, uid } from '../../lib/utils';
 import { Badge, Button, Card, Field, Input, Modal, Select, Stat, Textarea, Toggle, cx, Segmented } from '../../components/ui';
 import { QRCode } from '../../components/qr';
@@ -261,16 +261,25 @@ export function Deals() {
 }
 
 export function Campaigns() {
-  const { demo, cfg, data, tr, tl, update, lang } = useDemo();
+  const { demo, cfg, data, tr, tl, update, lang, m } = useDemo();
   const [title, setTitle] = useState({ en: '', ar: '' });
   const [body, setBody] = useState({ en: '', ar: '' });
-  const [aud, setAud] = useState<'all' | 'vip' | 'inactive'>('all');
+  const [aud, setAud] = useState<Audience>('all');
+  const [offer, setOffer] = useState(0);
   const templates = [
     { t: { en: '☀️ Weekend special', ar: '☀️ عرض نهاية الأسبوع' }, b: { en: 'Double points on every order this weekend!', ar: 'نقاط مضاعفة على كل طلب هذا الأسبوع!' } },
     { t: { en: 'We miss you 💛', ar: 'اشتقنا لك 💛' }, b: { en: 'Come back today and get 15% off with code BACK15.', ar: 'عُد اليوم واحصل على خصم 15% مع الرمز BACK15.' } },
     { t: { en: '🆕 Just landed', ar: '🆕 وصل حديثاً' }, b: { en: 'Our new arrivals are here — be the first to try them.', ar: 'وصلت منتجاتنا الجديدة — كن أول من يجرّبها.' } },
   ];
-  const counts = { all: audienceOf(demo, 'all').length, vip: audienceOf(demo, 'vip').length, inactive: audienceOf(demo, 'inactive').length };
+  const AUD: { k: Audience; en: string; ar: string; hint: [string, string]; show?: boolean }[] = [
+    { k: 'all', en: 'Everyone', ar: 'الجميع', hint: ['All customers', 'كل الزبائن'] },
+    { k: 'regulars', en: 'Regulars', ar: 'الدائمون', hint: ['5+ orders in the last 30 days', '5 طلبات أو أكثر في آخر 30 يوماً'] },
+    { k: 'quiet', en: 'Went quiet', ar: 'انقطعوا', hint: ['Used to order, nothing for 21+ days', 'كانوا يطلبون، لا شيء منذ 21 يوماً+'] },
+    { k: 'new', en: 'New', ar: 'جدد', hint: ['Joined in the last 14 days', 'انضموا خلال 14 يوماً'] },
+    { k: 'birthdays', en: 'Birthdays this week', ar: 'أعياد ميلاد هذا الأسبوع', hint: ['Birthday in the next 7 days', 'عيد ميلادهم خلال 7 أيام'] },
+    { k: 'vip', en: 'VIP', ar: 'VIP', hint: ['Silver tier and above', 'المستوى الفضي وما فوق'], show: cfg.modules.vipTiers },
+  ];
+  const counts = Object.fromEntries(AUD.map((a) => [a.k, audienceOf(demo, a.k).length])) as Record<Audience, number>;
   return (
     <>
       <PageHead title={tr('Push notifications', 'الإشعارات الفورية')} sub={tr('Reach every customer’s phone in one tap.', 'صل إلى هاتف كل زبون بضغطة واحدة.')} />
@@ -287,15 +296,29 @@ export function Campaigns() {
           </div>
           <div>
             <div className="text-sm font-medium text-gray-700 mb-1.5">{tr('Send to', 'إرسال إلى')}</div>
-            <Segmented value={aud} onChange={setAud} options={[
-              { value: 'all', label: `${tr('Everyone', 'الجميع')} · ${counts.all}` },
-              ...(cfg.modules.vipTiers ? [{ value: 'vip' as const, label: `VIP · ${counts.vip}` }] : []),
-              { value: 'inactive', label: `${tr('Inactive 14d+', 'غير نشطين 14 يوماً')} · ${counts.inactive}` },
-            ]} />
+            <div className="grid sm:grid-cols-3 gap-2">
+              {AUD.filter((a) => a.show !== false).map((a) => (
+                <button key={a.k} type="button" onClick={() => setAud(a.k)} className={cx('rounded-xl border-2 p-2.5 text-start', aud === a.k ? 'border-gray-900' : 'border-gray-200')}>
+                  <div className="flex justify-between font-semibold text-sm"><span>{tr(a.en, a.ar)}</span><span className="tabular-nums">{counts[a.k]}</span></div>
+                  <div className="text-[11px] text-gray-500">{tr(a.hint[0], a.hint[1])}</div>
+                </button>
+              ))}
+            </div>
+            <div className="text-xs text-gray-500 mt-1.5">{tr('Audiences update by themselves every night from each customer’s orders.', 'تتحدّث الفئات تلقائياً كل ليلة حسب طلبات كل زبون.')}</div>
+          </div>
+          <div>
+            <div className="text-sm font-medium text-gray-700 mb-1.5">{tr('Attach an offer', 'أرفق عرضاً')}</div>
+            <div className="flex gap-1.5">
+              {[0, 10, 15, 20, 25].map((v) => (
+                <button key={v} type="button" onClick={() => setOffer(v)} className={cx('flex-1 rounded-lg border py-2 text-sm font-semibold', offer === v ? 'bg-gray-900 text-white border-gray-900' : 'border-gray-200')}>{v ? `${v}% off` : tr('None', 'بدون')}</button>
+              ))}
+            </div>
+            {offer > 0 && <div className="text-xs text-gray-500 mt-1">{tr('Creates a personal code valid 14 days, and tracks every order that uses it.', 'ينشئ رمزاً صالحاً 14 يوماً ويتتبع كل طلب يستخدمه.')}</div>}
           </div>
           <Button size="lg" block icon={<Send size={18} />} disabled={!title.en.trim()} onClick={() => {
             let n = 0;
-            update((d) => void (n = sendCampaign(d, { en: title.en, ar: title.ar || undefined }, { en: body.en, ar: body.ar || undefined }, aud)));
+            update((d) => void (n = sendCampaign(d, { en: title.en, ar: title.ar || undefined }, { en: body.en, ar: body.ar || undefined }, aud, offer)));
+            setOffer(0);
             toast(tr(`Sent to ${n} customers 🚀 — switch to Customer to see it`, `أُرسل إلى ${n} زبوناً 🚀 — انتقل إلى الزبون لتراه`));
             setTitle({ en: '', ar: '' });
             setBody({ en: '', ar: '' });
@@ -324,9 +347,19 @@ export function Campaigns() {
               <div className="font-semibold truncate">{tl(c.title)}</div>
               <div className="text-sm text-gray-500 truncate">{tl(c.body)}</div>
             </div>
-            <div className="text-end text-sm">
+            {(() => {
+              const res = campaignResults(demo, c.code);
+              return res ? (
+                <div className="hidden sm:grid grid-cols-3 gap-4 text-center text-sm">
+                  <div><div className="font-bold">{res.uses}</div><div className="text-[11px] text-gray-500">{tr('used', 'استخدام')}</div></div>
+                  <div><div className="font-bold text-emerald-700">{m(Math.round(res.sales))}</div><div className="text-[11px] text-gray-500">{tr('sales', 'مبيعات')}</div></div>
+                  <div><div className="font-bold text-rose-600">{m(Math.round(res.cost))}</div><div className="text-[11px] text-gray-500">{tr('cost', 'تكلفة')}</div></div>
+                </div>
+              ) : null;
+            })()}
+            <div className="text-end text-sm min-w-[90px]">
               <div className="font-semibold">{c.reach} {tr('reached', 'وصلت')}</div>
-              <div className="text-xs text-gray-400">{timeAgo(c.sentAt, lang)}</div>
+              <div className="text-xs text-gray-400">{timeAgo(c.sentAt, lang)}{c.code && <span className="ms-1 font-mono">· {c.code}</span>}</div>
             </div>
           </div>
         ))}

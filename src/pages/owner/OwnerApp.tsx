@@ -2,12 +2,12 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { NavLink, Route, Routes, Link } from 'react-router-dom';
 import {
   LayoutDashboard, Receipt, Package, Users, Gift, Tag, Megaphone, CalendarDays, Palette, Settings as SettingsIcon, UserCog, FileText,
-  TrendingUp, ShoppingCart, Wallet, Star, Download, Search, Plus, Minus, MessageSquareHeart, CreditCard,
+  TrendingUp, ShoppingCart, Wallet, Star, Download, Search, Plus, Minus, MessageSquareHeart, CreditCard, Bike, XCircle,
 } from 'lucide-react';
 import { useDemo } from '../../lib/demo';
 import { toast } from '../../lib/store';
-import { addLedger, statusLabel, statusTone, tierOf } from '../../lib/ops';
-import type { Customer, Order, OrderStatus } from '../../lib/types';
+import { addLedger, statusLabel, statusTone, tierOf, LOST_REASONS, segmentOf, customerStats } from '../../lib/ops';
+import type { Customer, Order, OrderStatus, LostReason } from '../../lib/types';
 import { DAY, downloadCsv, fmtDate, fmtTime, timeAgo, ymd } from '../../lib/utils';
 import { Badge, Button, Card, Input, Modal, Segmented, Stat, cx } from '../../components/ui';
 import { OrderTicket } from '../staff/StaffApp';
@@ -15,6 +15,7 @@ import Catalog from './Catalog';
 import { Loyalty, Deals, Campaigns } from './Marketing';
 import { Branding, Settings, Staff, OwnerReservations, Plan } from './Settings';
 import { Reviews, WalletAdmin } from './Extras';
+import { Riders, DailyClose } from './Riders';
 
 export default function OwnerApp() {
   const { cfg, tr, tl, terms } = useDemo();
@@ -23,6 +24,7 @@ export default function OwnerApp() {
     { to: '', end: true, icon: <LayoutDashboard size={18} />, label: tr('Dashboard', 'لوحة القيادة') },
     { to: 'orders', icon: <Receipt size={18} />, label: tr('Orders', 'الطلبات'), show: mod.ordering },
     { to: 'catalog', icon: <Package size={18} />, label: tl(terms.catalog), show: mod.ordering },
+    { to: 'riders', icon: <Bike size={18} />, label: tr('Riders & cash', 'السائقون والنقود'), show: mod.delivery },
     { to: 'customers', icon: <Users size={18} />, label: tr('Customers', 'الزبائن') },
     { to: 'loyalty', icon: <Gift size={18} />, label: tr('Loyalty', 'الولاء'), show: mod.loyaltyPoints || mod.loyaltyStamps },
     { to: 'deals', icon: <Tag size={18} />, label: tr('Deals', 'العروض'), show: mod.deals },
@@ -69,6 +71,7 @@ export default function OwnerApp() {
             <Route path="campaigns" element={<Campaigns />} />
             <Route path="reservations" element={<OwnerReservations />} />
             <Route path="reviews" element={<Reviews />} />
+            <Route path="riders" element={<Riders />} />
             <Route path="wallet" element={<WalletAdmin />} />
             <Route path="branding" element={<Branding />} />
             <Route path="staff" element={<Staff />} />
@@ -109,6 +112,8 @@ function Dashboard() {
   const issued = data.ledger.filter((l) => l.at >= since && l.points > 0).reduce((s, l) => s + l.points, 0);
   const redeemed = data.ledger.filter((l) => l.at >= since && l.source === 'reward').length;
   const live = data.orders.filter((o) => !['completed', 'cancelled'].includes(o.status));
+  const lostList = data.orders.filter((o) => o.status === 'cancelled' && o.createdAt >= since);
+  const lostReasons = Object.entries(lostList.reduce<Record<string, number>>((a, o) => ((a[o.lostReason ?? 'other'] = (a[o.lostReason ?? 'other'] ?? 0) + 1), a), {})).sort((a, b) => b[1] - a[1]);
   const rated = cur.filter((o) => o.rating);
   const avgRating = rated.length ? rated.reduce((s, o) => s + o.rating!, 0) / rated.length : 0;
   const tips = cur.reduce((s, o) => s + (o.tip || 0), 0);
@@ -147,6 +152,7 @@ function Dashboard() {
         sub={tr('Here is how your business is doing.', 'إليك أداء عملك.')}
         action={<Segmented value={range} onChange={setRange} options={[{ value: '7', label: tr('7 days', '7 أيام') }, { value: '30', label: tr('30 days', '30 يوماً') }]} />}
       />
+      <div className="mb-4"><DailyClose /></div>
       {live.length > 0 && (
         <Link to="../staff" className="flex items-center gap-3 rounded-app bg-amber-50 border border-amber-200 p-3.5 mb-4">
           <span className="h-3 w-3 rounded-full bg-amber-500 animate-pulse" />
@@ -206,11 +212,56 @@ function Dashboard() {
         </Card>
       </div>
 
+      <div className="grid lg:grid-cols-3 gap-4 mt-4">
+        <Card className="p-5 lg:col-span-2">
+          <div className="font-bold mb-3">{tr('Busiest times of the week', 'أوقات الذروة في الأسبوع')}</div>
+          <Heatmap orders={cur} />
+        </Card>
+        <Card className="p-5">
+          <div className="font-bold mb-1 flex items-center gap-2"><XCircle size={17} className="text-rose-500" /> {tr('Lost orders', 'الطلبات الضائعة')}</div>
+          <div className="text-3xl font-extrabold">{lostList.length}</div>
+          <div className="text-xs text-gray-500 mb-3">{tr(`≈ ${m(Math.round(lostList.reduce((s, o) => s + o.total, 0)))} in missed sales`, `≈ ${m(Math.round(lostList.reduce((s, o) => s + o.total, 0)))} مبيعات ضائعة`)}</div>
+          <div className="space-y-1.5 text-sm">
+            {lostReasons.map(([k, n]) => (
+              <div key={k} className="flex items-center gap-2">
+                <span className="flex-1">{tl(LOST_REASONS[k as LostReason])}</span>
+                <span className="h-2 w-20 rounded-full bg-gray-100 overflow-hidden"><span className="block h-full bg-rose-400" style={{ width: `${(n / (lostReasons[0]?.[1] || 1)) * 100}%` }} /></span>
+                <span className="w-6 text-end font-semibold">{n}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+
       <Card className="mt-4 overflow-hidden">
         <div className="px-5 py-4 font-bold flex items-center justify-between">{tr('Recent orders', 'أحدث الطلبات')}<Link to="orders" className="text-sm text-brand">{tr('See all', 'عرض الكل')}</Link></div>
         <OrdersTable orders={data.orders.slice(0, 6)} />
       </Card>
     </>
+  );
+}
+
+function Heatmap({ orders }: { orders: Order[] }) {
+  const { tr, lang } = useDemo();
+  const days = lang === 'ar' ? ['أحد', 'إثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت'] : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const hours = Array.from({ length: 16 }, (_, i) => i + 8);
+  const grid = days.map((_, d) => hours.map((h) => orders.filter((o) => { const x = new Date(o.createdAt); return x.getDay() === d && x.getHours() === h; }).length));
+  const max = Math.max(1, ...grid.flat());
+  return (
+    <div className="overflow-x-auto">
+      <div className="inline-grid gap-[3px]" style={{ gridTemplateColumns: `44px repeat(${hours.length}, minmax(18px,1fr))` }} dir="ltr">
+        <span />
+        {hours.map((h) => <span key={h} className="text-[10px] text-gray-400 text-center">{h}</span>)}
+        {days.map((d, di) => [
+          <span key={d} className="text-[11px] text-gray-500 pe-1">{d}</span>,
+          ...hours.map((h, hi) => {
+            const v = grid[di][hi];
+            return <span key={d + h} title={`${d} ${h}:00 · ${v}`} className="h-5 rounded-[3px]" style={{ background: v ? `rgb(var(--brand) / ${0.12 + (v / max) * 0.88})` : '#f3f4f6' }} />;
+          }),
+        ])}
+      </div>
+      <div className="text-xs text-gray-500 mt-2">{tr('Darker = more orders. Use it to plan staff and riders.', 'الأغمق = طلبات أكثر. استخدمه لتنظيم الموظفين والسائقين.')}</div>
+    </div>
   );
 }
 
@@ -332,6 +383,7 @@ function Customers() {
     });
     return s;
   }, [data.orders]);
+  const cstats = useMemo(() => customerStats(demo), [demo]);
   const list = data.customers
     .filter((c) => !q || c.name.toLowerCase().includes(q.toLowerCase()) || c.phone.replace(/\s/g, '').includes(q.replace(/\s/g, '')))
     .sort((a, b) => (stats.get(b.id)?.spent ?? 0) - (stats.get(a.id)?.spent ?? 0));
@@ -355,6 +407,7 @@ function Customers() {
             <tr>
               <th className="text-start px-5 py-2.5">{tr('Customer', 'الزبون')}</th>
               {cfg.modules.vipTiers && <th className="text-start px-3 py-2.5">{tr('Tier', 'المستوى')}</th>}
+              <th className="text-start px-3 py-2.5">{tr('Segment', 'الفئة')}</th>
               <th className="text-end px-3 py-2.5">{tr('Points', 'النقاط')}</th>
               <th className="text-end px-3 py-2.5 hidden sm:table-cell">{tr('Orders', 'الطلبات')}</th>
               <th className="text-end px-3 py-2.5">{tr('Spent', 'الإنفاق')}</th>
@@ -371,6 +424,7 @@ function Customers() {
                     <div className="text-xs text-gray-500" dir="ltr" style={{ textAlign: 'start' }}>{x.phone}</div>
                   </td>
                   {cfg.modules.vipTiers && <td className="px-3 py-3">{t && <span className="rounded-full px-2 py-0.5 text-xs font-bold text-white" style={{ background: t.color }}>{tl(t.name)}</span>}</td>}
+                  <td className="px-3 py-3"><SegBadge seg={segmentOf(demo, x, cstats.get(x.id))} /></td>
                   <td className="px-3 py-3 text-end tabular-nums font-semibold">{x.points}</td>
                   <td className="px-3 py-3 text-end tabular-nums hidden sm:table-cell">{stats.get(x.id)?.orders ?? 0}</td>
                   <td className="px-3 py-3 text-end tabular-nums">{m(Math.round(stats.get(x.id)?.spent ?? 0))}</td>
@@ -386,6 +440,17 @@ function Customers() {
       </Modal>
     </>
   );
+}
+
+function SegBadge({ seg }: { seg: 'regular' | 'quiet' | 'new' | 'occasional' }) {
+  const { tr } = useDemo();
+  const map = {
+    regular: ['bg-emerald-100 text-emerald-800', tr('Regular', 'دائم')],
+    quiet: ['bg-amber-100 text-amber-800', tr('Went quiet', 'انقطع')],
+    new: ['bg-sky-100 text-sky-800', tr('New', 'جديد')],
+    occasional: ['bg-gray-100 text-gray-600', tr('Occasional', 'أحياناً')],
+  } as const;
+  return <Badge className={map[seg][0]}>{map[seg][1]}</Badge>;
 }
 
 function CustomerDetail({ c }: { c: Customer }) {

@@ -78,9 +78,16 @@ export function buildConfig(a: WizardAnswers): DemoConfig {
     branches: makeBranches(a.lead.answers.branches, a.business.city, a.business.phone),
     wallet: { topUps: [10, 25, 50, 100], bonusPercent: 10 },
     tips: [0, 5, 10, 15],
+    dual: defaultDual(a.business.country, a.business.currency),
     lead: a.lead,
   };
 }
+
+const defaultDual = (country: string, currency: string) => ({
+  enabled: country === 'Lebanon' && currency === 'USD', currency: 'LBP', rate: 89500, roundTo: 5000,
+});
+
+const RIDERS = [['Khaled M.', '1001'], ['Rami H.', '1002'], ['Ali S.', '1003']];
 
 const BIRTHDAY: Record<string, { en: string; ar: string }> = {
   restaurant: { en: 'Free birthday dessert 🎂', ar: 'حلوى مجانية في عيد ميلادك 🎂' },
@@ -111,6 +118,7 @@ export function migrateConfig(c: DemoConfig): DemoConfig {
   c.loyalty.referralBonus ??= 100;
   c.loyalty.birthdayReward ??= BIRTHDAY[c.industry];
   (c.payments as Record<string, boolean>).wallet ??= m.wallet;
+  c.dual ??= defaultDual(c.business.country, c.business.currency);
   return c;
 }
 
@@ -125,6 +133,9 @@ export function migrateData(d: DemoData, c: DemoConfig): DemoData {
     x.referralCode ??= (x.name.replace(/[^A-Za-z]/g, '').slice(0, 4).toUpperCase() || 'FRND') + code(3);
   });
   d.orders.forEach((o) => (o.tip ??= 0));
+  d.riders ??= RIDERS.map(([name, pin], i) => ({ id: 'rd' + (i + 1), name, phone: '+961 76 ' + (300100 + i * 1111), pin, active: true, onShift: i < 2, shiftStart: Date.now() - 4 * 3600000 }));
+  d.collections ??= [];
+  d.settlements ??= [];
   void c;
   return d;
 }
@@ -143,7 +154,7 @@ export function buildData(cfg: DemoConfig): DemoData {
     { id: meId, name: cfg.defaultLang === 'ar' ? 'ضيف التجربة' : 'Demo Guest', phone: `${dial} 70 000 000`, points: 180, lifetimePoints: 620, stamps: Math.max(0, pr.stampsTarget - 2), joinedAt: now - 40 * DAY, lastSeenAt: now, wallet: cfg.modules.wallet ? 12 : 0, referralCode: 'GUEST' + code(3) },
     ...NAMES.map((name, i) => ({
       id: 'c' + i, name, phone: phone(), points: 0, lifetimePoints: 0, stamps: 0,
-      joinedAt: now - (10 + r(170)) * DAY, lastSeenAt: now - r(30) * DAY,
+      joinedAt: i >= NAMES.length - 3 ? now - (2 + r(9)) * DAY : now - (20 + r(160)) * DAY, lastSeenAt: now - r(30) * DAY,
       wallet: cfg.modules.wallet && r(3) === 0 ? 5 * (1 + r(10)) : 0, referralCode: name.split(' ')[0].toUpperCase().slice(0, 5) + code(3),
       birthday: `${String(1 + r(12)).padStart(2, '0')}-${String(1 + r(28)).padStart(2, '0')}`,
     })),
@@ -180,20 +191,24 @@ export function buildData(cfg: DemoConfig): DemoData {
       status, history: [{ status: 'pending', at }, ...(status !== 'pending' ? [{ status, at: at + 15 * 60000 }] : [])],
       createdAt: at, updatedAt: at + 15 * 60000, pointsEarned: pts, stampsEarned: sts,
       tip: f !== 'delivery' && cfg.modules.tips && r(3) === 0 ? round2(subtotal * 0.1) : 0,
+      riderId: f === 'delivery' && status === 'completed' ? 'rd' + (1 + r(3)) : undefined,
+      lostReason: status === 'cancelled' ? (['busy', 'busy', 'soldOut', 'outsideArea', 'customer', 'closed'] as const)[r(6)] : undefined,
       branchId: cfg.branches[r(cfg.branches.length)]?.id,
       ...(status === 'completed' && cfg.modules.reviews && r(5) < 2 ? reviewFor(r) : {}),
     };
   };
 
   // ~45 days of history, busier on weekends and in the evening
-  for (let day = 45; day >= 1; day--) {
+  for (let day = 62; day >= 1; day--) {
     const date = new Date(now - day * DAY);
     const weekend = [5, 6, 0].includes(date.getDay());
-    const count = 2 + r(4) + (weekend ? 2 : 0) + Math.floor((45 - day) / 15);
+    const count = 2 + r(4) + (weekend ? 2 : 0) + Math.floor((62 - day) / 21);
     for (let k = 0; k < count; k++) {
       const hour = 9 + r(13);
       const at = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hour, r(60)).getTime();
-      const o = makeOrder(1 + r(NAMES.length), at, r(18) === 0 ? 'cancelled' : 'completed');
+      // A few loyal regulars order most; many customers order rarely (realistic audiences).
+      const who = 1 + Math.min(NAMES.length - 1, Math.floor(Math.pow(rnd(), 2.2) * NAMES.length));
+      const o = makeOrder(day > 25 || rnd() < 0.7 ? who : 1 + r(8), at, r(18) === 0 ? 'cancelled' : 'completed');
       orders.push(o);
       const c = customers.find((x) => x.id === o.customerId)!;
       c.lastSeenAt = Math.max(c.lastSeenAt, at);
@@ -205,6 +220,44 @@ export function buildData(cfg: DemoConfig): DemoData {
       }
     }
   }
+  // Earlier today (for the live dashboard, riders' cash and the daily close)
+  const nowD = new Date(now);
+  const todayCount = Math.max(3, Math.min(9, nowD.getHours() - 9));
+  for (let k = 0; k < todayCount; k++) {
+    const at = now - (30 + r(Math.max(60, (nowD.getHours() - 9) * 60))) * 60000;
+    if (at < new Date(nowD.getFullYear(), nowD.getMonth(), nowD.getDate()).getTime()) continue;
+    const o = makeOrder(1 + r(NAMES.length), at, r(9) === 0 ? 'cancelled' : 'completed');
+    if (cfg.modules.delivery && o.status === 'completed' && k % 3 !== 2) {
+      o.fulfillment = 'delivery';
+      o.payment = cfg.payments.cash ? 'cash' : o.payment;
+      o.riderId = 'rd' + (1 + (k % 2));
+      o.zoneId = cfg.fulfillment.zones[0]?.id;
+      o.address = o.address ?? 'Main street, building ' + (1 + r(40));
+    }
+    orders.push(o);
+  }
+  // An offer sent 20 days ago and the orders that used it
+  const offerCode = 'MISSYOU15';
+  orders.filter((o) => o.status === 'completed' && o.createdAt > now - 19 * DAY).filter(() => r(5) === 0).slice(0, 14).forEach((o) => {
+    o.couponCode = offerCode;
+    o.discount = round2(o.subtotal * 0.15);
+    o.total = round2(o.subtotal - o.discount + o.deliveryFee);
+  });
+  // Cash riders collected today and haven't handed in yet
+  const collections: DemoData['collections'] = [];
+  const todayKey = ymd(nowD);
+  orders.filter((o) => o.riderId && o.payment === 'cash' && ymd(new Date(o.createdAt)) === todayKey).forEach((o) => {
+    o.collected = o.total;
+    collections.push({ id: uid('cc'), riderId: o.riderId!, orderId: o.id, orderNumber: o.number, amount: o.total, at: o.updatedAt, settled: false });
+  });
+  const settlements: DemoData['settlements'] = [];
+  for (let day = 1; day <= 4; day++)
+    RIDERS.forEach((_, i) => {
+      const collected = round2(80 + r(300) + r(100) / 100);
+      const short = r(6) === 0 ? 5 * (1 + r(2)) : 0;
+      settlements.push({ id: uid('st'), riderId: 'rd' + (i + 1), collected, counted: collected - short, short, at: now - day * DAY + 3600000 });
+    });
+
   // Some customers already redeemed points
   customers.slice(1).forEach((c) => {
     if (c.points > 400 && r(2) === 0) {
@@ -260,7 +313,7 @@ export function buildData(cfg: DemoConfig): DemoData {
     ],
     campaigns: [
       { id: uid('c'), title: { en: 'Weekend special 🎉', ar: 'عرض نهاية الأسبوع 🎉' }, body: { en: 'Double points all weekend long.', ar: 'نقاط مضاعفة طوال عطلة نهاية الأسبوع.' }, audience: 'all', reach: 34, sentAt: now - 9 * DAY },
-      { id: uid('c'), title: { en: 'We miss you!', ar: 'اشتقنا لك!' }, body: { en: 'Here’s 15% off your next order.', ar: 'إليك خصم 15% على طلبك القادم.' }, audience: 'inactive', reach: 11, sentAt: now - 20 * DAY },
+      { id: uid('c'), title: { en: 'We miss you!', ar: 'اشتقنا لك!' }, body: { en: 'Here’s 15% off your next order.', ar: 'إليك خصم 15% على طلبك القادم.' }, audience: 'quiet', reach: 11, sentAt: now - 20 * DAY, code: 'MISSYOU15' },
     ],
     staff: [
       { id: 's1', name: 'Rami (Manager)', role: 'manager', pin: '1234', active: true },
@@ -270,6 +323,9 @@ export function buildData(cfg: DemoConfig): DemoData {
     favorites: [],
     stockAlerts: [],
     giftCards: [],
+    riders: RIDERS.map(([name, pin], i) => ({ id: 'rd' + (i + 1), name, phone: '+961 76 ' + (300100 + i * 1111), pin, active: true, onShift: i < 2, shiftStart: now - 4 * 3600000, branchId: undefined })),
+    collections,
+    settlements,
     walletTx: cfg.modules.wallet ? [{ id: uid('w'), customerId: meId, amount: 12, kind: 'gift', note: 'Welcome credit', at: now - 5 * DAY }] : [],
     usedTokens: [],
     staticScans: [],

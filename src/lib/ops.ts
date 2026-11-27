@@ -4,7 +4,7 @@
 // When this moves to a real backend, these become API endpoints.
 // ───────────────────────────────────────────────────────────────
 import type {
-  Demo, Fulfillment, L, LedgerSource, Notice, Order, OrderStatus, PaymentKey, Product, Reservation, Tier, Voucher, Customer, Industry,
+  Demo, Fulfillment, L, LedgerSource, Notice, Order, OrderStatus, PaymentKey, Product, Reservation, Tier, Voucher, Customer, Industry, Audience, LostReason,
 } from './types';
 import { code, round2, uid, ymd, DAY } from './utils';
 
@@ -357,6 +357,14 @@ export function setOrderStatus(d: Demo, orderId: string, status: OrderStatus) {
   o.updatedAt = Date.now();
   o.history.push({ status, at: Date.now() });
   if (status === 'accepted') tourDone(d, 'staffAccept');
+  if (status === 'outForDelivery' && !o.riderId && o.fulfillment === 'delivery') {
+    const r = suggestRider(d, o.branchId);
+    if (r) { o.riderId = r.id; o.assignedAt = Date.now(); }
+  }
+  if (status === 'completed' && o.riderId && o.payment === 'cash' && !o.collected) {
+    o.collected = o.total;
+    d.data.collections.unshift({ id: uid('cc'), riderId: o.riderId, orderId: o.id, orderNumber: o.number, amount: o.total, at: Date.now(), settled: false });
+  }
   if (status === 'cancelled' && o.payment === 'wallet') {
     const c = d.data.customers.find((x) => x.id === o.customerId);
     if (c) {
@@ -379,7 +387,10 @@ export function setOrderStatus(d: Demo, orderId: string, status: OrderStatus) {
     accepted: { en: `Estimated time: ${d.config.fulfillment.prepMinutes} min`, ar: `الوقت المتوقع: ${d.config.fulfillment.prepMinutes} دقيقة` },
     preparing: { en: 'Your order is being prepared right now.', ar: 'يتم تحضير طلبك الآن.' },
     ready: o.fulfillment === 'pickup' ? { en: 'Come and collect it — show your order number.', ar: 'تفضّل لاستلامه — أظهر رقم الطلب.' } : { en: 'Almost there!', ar: 'اقتربنا!' },
-    outForDelivery: { en: 'Your order is on its way to you.', ar: 'طلبك في الطريق إليك.' },
+    outForDelivery: (() => {
+      const r = d.data.riders.find((x) => x.id === o.riderId);
+      return r ? { en: `${r.name.split(' ')[0]} is on the way with your order.`, ar: `${r.name.split(' ')[0]} في الطريق مع طلبك.` } : { en: 'Your order is on its way to you.', ar: 'طلبك في الطريق إليك.' };
+    })(),
     completed: o.pointsEarned || o.stampsEarned
       ? { en: describeEarn(o.pointsEarned, o.stampsEarned, 'en') + ' 🎉', ar: describeEarn(o.pointsEarned, o.stampsEarned, 'ar') + ' 🎉' }
       : { en: 'Thanks for your order!', ar: 'شكراً لطلبك!' },
@@ -430,23 +441,152 @@ export function setReservationStatus(d: Demo, id: string, status: Reservation['s
 }
 
 // ── Campaigns ──────────────────────────────────────────────────
-export function audienceOf(d: Demo, a: 'all' | 'vip' | 'inactive') {
-  const cs = d.data.customers;
-  if (a === 'vip') return cs.filter((c) => (tierOf(d, c.lifetimePoints)?.minPoints ?? 0) > 0);
-  if (a === 'inactive') return cs.filter((c) => Date.now() - c.lastSeenAt > 14 * DAY);
-  return cs;
+/** Per-customer order habits, used for automatic audiences. */
+export function customerStats(d: Demo) {
+  const m = new Map<string, { orders: number; last: number; recent: number; spent: number }>();
+  const now = Date.now();
+  for (const o of d.data.orders) {
+    if (o.status !== 'completed') continue;
+    const x = m.get(o.customerId) ?? { orders: 0, last: 0, recent: 0, spent: 0 };
+    x.orders++;
+    x.spent += o.total;
+    x.last = Math.max(x.last, o.createdAt);
+    if (now - o.createdAt < 30 * DAY) x.recent++;
+    m.set(o.customerId, x);
+  }
+  return m;
 }
 
-export function sendCampaign(d: Demo, title: L, body: L, audience: 'all' | 'vip' | 'inactive') {
+export function segmentOf(d: Demo, c: Customer, st = customerStats(d).get(c.id)) {
+  const now = Date.now();
+  if (st && st.recent >= 5) return 'regular' as const;
+  if (st && st.orders >= 2 && now - st.last > 21 * DAY) return 'quiet' as const;
+  if (now - c.joinedAt < 14 * DAY) return 'new' as const;
+  return 'occasional' as const;
+}
+
+export function audienceOf(d: Demo, a: Audience) {
+  const cs = d.data.customers;
+  const stats = customerStats(d);
+  const now = new Date();
+  const week = Array.from({ length: 7 }, (_, i) => {
+    const x = new Date(now.getTime() + i * DAY);
+    return `${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
+  });
+  switch (a) {
+    case 'vip': return cs.filter((c) => (tierOf(d, c.lifetimePoints)?.minPoints ?? 0) > 0);
+    case 'inactive': return cs.filter((c) => Date.now() - c.lastSeenAt > 14 * DAY);
+    case 'regulars': return cs.filter((c) => segmentOf(d, c, stats.get(c.id)) === 'regular');
+    case 'quiet': return cs.filter((c) => segmentOf(d, c, stats.get(c.id)) === 'quiet');
+    case 'new': return cs.filter((c) => segmentOf(d, c, stats.get(c.id)) === 'new');
+    case 'birthdays': return cs.filter((c) => c.birthday && week.includes(c.birthday));
+    default: return cs;
+  }
+}
+
+export function sendCampaign(d: Demo, title: L, body: L, audience: Audience, offerPercent = 0) {
   const list = audienceOf(d, audience);
-  d.data.campaigns.unshift({ id: uid('c'), title, body, audience, reach: list.length, sentAt: Date.now() });
+  let codeStr: string | undefined;
+  if (offerPercent > 0) {
+    codeStr = (audience === 'quiet' ? 'MISSYOU' : audience === 'birthdays' ? 'BDAY' : 'APP') + offerPercent + code(2);
+    d.data.deals.unshift({
+      id: uid('d'), title, desc: body, code: codeStr, kind: 'percent', value: offerPercent, minOrder: 0, emoji: '💌', bg: '#fde68a', active: true,
+      endsAt: Date.now() + 14 * DAY,
+    });
+  }
+  d.data.campaigns.unshift({ id: uid('c'), title, body, audience, reach: list.length, sentAt: Date.now(), code: codeStr });
   // The demo user always receives it so the owner can see how it looks.
   notify(d, title, body, 'campaign');
   tourDone(d, 'campaign');
   return list.length;
 }
 
-export const productAvailable = (p: Product) => p.active && (p.stock === null || p.stock > 0);
+export const productAvailable = (p: Product, branchId?: string) =>
+  p.active && (p.stock === null || p.stock > 0) && !(branchId && p.soldOutAt?.includes(branchId));
+
+/** Results of an offer: how many used it, the sales it brought and what it cost. */
+export function campaignResults(d: Demo, codeStr?: string) {
+  if (!codeStr) return null;
+  const os = d.data.orders.filter((o) => o.couponCode === codeStr && o.status !== 'cancelled');
+  return { uses: os.length, sales: round2(os.reduce((s, o) => s + o.total, 0)), cost: round2(os.reduce((s, o) => s + o.discount, 0)) };
+}
+
+// ── Lost orders ────────────────────────────────────────────────
+export const LOST_REASONS: Record<LostReason, L> = {
+  busy: { en: 'Too busy', ar: 'ضغط كبير' },
+  soldOut: { en: 'Item sold out', ar: 'نفد صنف' },
+  outsideArea: { en: 'Outside delivery area', ar: 'خارج منطقة التوصيل' },
+  closed: { en: 'Closing / closed', ar: 'وقت الإغلاق' },
+  customer: { en: 'Customer cancelled', ar: 'ألغى الزبون' },
+  other: { en: 'Other', ar: 'أخرى' },
+};
+export function rejectOrder(d: Demo, orderId: string, reason: LostReason) {
+  const o = d.data.orders.find((x) => x.id === orderId);
+  if (!o) return;
+  o.lostReason = reason;
+  setOrderStatus(d, orderId, 'cancelled');
+}
+
+// ── Riders & cash on delivery ──────────────────────────────────
+export function riderHolding(d: Demo, riderId: string) {
+  return round2(d.data.collections.filter((c) => c.riderId === riderId && !c.settled).reduce((s, c) => s + c.amount, 0));
+}
+export function riderActive(d: Demo, riderId: string) {
+  return d.data.orders.filter((o) => o.riderId === riderId && o.status === 'outForDelivery');
+}
+export function suggestRider(d: Demo, branchId?: string) {
+  const pool = d.data.riders.filter((r) => r.active && r.onShift && (!branchId || !r.branchId || r.branchId === branchId));
+  return [...pool].sort((a, b) => riderActive(d, a.id).length - riderActive(d, b.id).length)[0];
+}
+export function assignRider(d: Demo, orderId: string, riderId: string) {
+  const o = d.data.orders.find((x) => x.id === orderId);
+  const r = d.data.riders.find((x) => x.id === riderId);
+  if (!o || !r) return;
+  o.riderId = riderId;
+  o.assignedAt = Date.now();
+  if (o.status !== 'outForDelivery') setOrderStatus(d, orderId, 'outForDelivery');
+  tourDone(d, 'dispatch');
+}
+export function collectCash(d: Demo, orderId: string) {
+  const o = d.data.orders.find((x) => x.id === orderId);
+  if (!o || !o.riderId || o.collected) return;
+  o.collected = o.total;
+  o.paid = true;
+  d.data.collections.unshift({ id: uid('cc'), riderId: o.riderId, orderId: o.id, orderNumber: o.number, amount: o.total, at: Date.now(), settled: false });
+  tourDone(d, 'riderCash');
+}
+export function settleRider(d: Demo, riderId: string, counted: number) {
+  const collected = riderHolding(d, riderId);
+  d.data.collections.forEach((c) => c.riderId === riderId && (c.settled = true));
+  const st = { id: uid('st'), riderId, collected, counted, short: round2(collected - counted), at: Date.now() };
+  d.data.settlements.unshift(st);
+  const r = d.data.riders.find((x) => x.id === riderId);
+  if (r) r.onShift = false;
+  track(d, 'settle');
+  return st;
+}
+
+/** Second-currency price (e.g. lira), rounded to real banknotes. */
+export function dualPrice(d: Demo, amount: number) {
+  const x = d.config.dual;
+  if (!x?.enabled || !x.rate) return null;
+  const v = amount * x.rate;
+  return x.roundTo ? Math.round(v / x.roundTo) * x.roundTo : Math.round(v);
+}
+
+/** The day's figures, as a message the owner can send to WhatsApp. */
+export function dailyClose(d: Demo, day = new Date()) {
+  const key = ymd(day);
+  const os = d.data.orders.filter((o) => ymd(new Date(o.createdAt)) === key);
+  const done = os.filter((o) => o.status === 'completed');
+  const lost = os.filter((o) => o.status === 'cancelled');
+  const sales = round2(done.reduce((s, o) => s + o.total, 0));
+  const riders = d.data.riders.map((r) => ({ r, holding: riderHolding(d, r.id) })).filter((x) => x.holding > 0);
+  const withRiders = round2(riders.reduce((s, x) => s + x.holding, 0));
+  const reasons: Partial<Record<LostReason, number>> = {};
+  lost.forEach((o) => { const k = o.lostReason ?? 'other'; reasons[k] = (reasons[k] ?? 0) + 1; });
+  return { key, orders: os.length, delivered: done.length, lost: lost.length, sales, withRiders, riders, reasons, avg: done.length ? round2(sales / done.length) : 0 };
+}
 
 // ── Store status (hours, closed days, paused) ──────────────────
 export function storeStatus(d: Demo, at = new Date()) {

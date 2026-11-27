@@ -55,6 +55,9 @@ Sales console (#/sales)  —  share links (#/i/<config>) open a fresh copy on an
 * **Guided tour** (checklist icon): 10 tasks covering every feature. What the client actually used shows up in **My app plan** and in the Sales console.
 * **Simulate store activity** (⋯ menu): orders move through the statuses by themselves.
 
+### New in v3.0
+**Rider app** (4th role): deliveries, navigate/call, collect cash on delivery, mark delivered · **dispatch** from the counter with a suggested rider · **live tracking map** for the customer · **Riders & cash** page: cash each rider holds, end-of-shift count with shortfall recorded per rider · **order chime** repeats every 20 s until accepted · **sold out per branch** in one tap · **lira/dollar** prices at the owner's rate + change calculator · **automatic audiences** (regulars, went quiet, new, birthdays) with offer codes and **results per campaign** (uses, sales, cost) · **lost orders with reasons** · weekly **heatmap** · **daily close** to WhatsApp · **Instagram order link** · landing **commission calculator** and **two launch options** (native app vs PWA, prices in `platform.config.ts`).
+
 ### New in v2.1
 Opening days, **pause orders** and **busy mode** · **multi-branch** (branch picker, orders tagged by branch) · **dietary/label filters** (vegan, gluten-free, spicy, kids…) · **sale prices** with % badges · **favorites** · **back-in-stock alerts** · **wallet** (top-up with bonus, pay with wallet, refunds on cancel) · **gift cards** (buy, send, redeem) · **tips** at checkout · **ratings & reviews** with owner replies · **referral codes** and **birthday rewards** · **table QR codes** (print a sheet; scanning starts a dine-in order) · printable **kitchen/receipt tickets** · new owner pages: Reviews, Wallet & gifts. All switchable per business in Settings and in the questionnaire.
 

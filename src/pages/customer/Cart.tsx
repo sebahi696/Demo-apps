@@ -110,7 +110,7 @@ const Row = ({ k, v, green, bold }: { k: string; v: string; green?: boolean; bol
 );
 
 export function Checkout() {
-  const { demo, cfg, data, tr, tl, m, update, terms, lang } = useDemo();
+  const { demo, cfg, data, tr, tl, m, m2, update, terms, lang } = useDemo();
   const nav = useNavigate();
   const options = (['delivery', 'pickup', 'dineIn'] as Fulfillment[]).filter((f) => cfg.modules[f]);
   const [f, setF] = useState<Fulfillment>(data.cart.table && cfg.modules.dineIn ? 'dineIn' : options[0] ?? 'pickup');
@@ -254,6 +254,7 @@ export function Checkout() {
         {t.tax > 0 && <Row k={cfg.fulfillment.taxIncluded ? tr(`VAT ${cfg.fulfillment.taxRate}% (included)`, `ضريبة ${cfg.fulfillment.taxRate}% (مشمولة)`) : tr(`VAT ${cfg.fulfillment.taxRate}%`, `ضريبة ${cfg.fulfillment.taxRate}%`)} v={m(t.tax)} />}
         {t.tip > 0 && <Row k={tr('Tip', 'الإكرامية')} v={m(t.tip)} />}
         <Row k={tr('Total', 'الإجمالي')} v={m(t.total)} bold />
+        {m2(t.total) && <div className="text-end text-xs text-gray-400">≈ {m2(t.total)}</div>}
         {(earnPts > 0 || earnSt > 0) && <div className="mt-2 rounded-lg bg-brand2/20 px-3 py-2 text-xs font-semibold">⭐ {describeEarn(earnPts, earnSt, lang)} {tr('when your order is completed', 'عند إتمام طلبك')}</div>}
       </div>
 

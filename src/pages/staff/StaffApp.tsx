@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { NavLink, Route, Routes } from 'react-router-dom';
-import { ClipboardList, QrCode, ScanLine, CalendarDays, Truck, Store, UtensilsCrossed, Banknote, Check, X, RefreshCw, Smartphone, Search, Printer, PauseCircle } from 'lucide-react';
+import { ClipboardList, QrCode, ScanLine, CalendarDays, Truck, Store, UtensilsCrossed, Banknote, Check, X, RefreshCw, Smartphone, Search, Printer, PauseCircle, Bike, Volume2, VolumeX, Ban, Calculator } from 'lucide-react';
 import { useDemo } from '../../lib/demo';
 import { toast } from '../../lib/store';
-import { addLedger, claimToken, claimUrl, findVoucher, makeToken, nextStatus, parseScan, pointsFor, setOrderStatus, setReservationStatus, statusLabel, statusTone, useVoucher } from '../../lib/ops';
-import type { Order, OrderStatus } from '../../lib/types';
+import { assignRider, suggestRider, riderActive, rejectOrder, LOST_REASONS, dualPrice, productAvailable, addLedger, claimToken, claimUrl, findVoucher, makeToken, nextStatus, parseScan, pointsFor, setOrderStatus, setReservationStatus, statusLabel, statusTone, useVoucher } from '../../lib/ops';
+import type { Order, OrderStatus, LostReason } from '../../lib/types';
 import { fmtDate, timeAgo, ymd } from '../../lib/utils';
-import { Badge, Button, Card, Empty, Input, Segmented, Stepper, cx } from '../../components/ui';
+import { Badge, Button, Card, Empty, Input, Segmented, Stepper, cx, Modal, Thumb, Toggle } from '../../components/ui';
 import { QRCode, Scanner } from '../../components/qr';
 import { resLabel, resTone } from '../customer/Reserve';
 
@@ -19,6 +19,7 @@ export default function StaffApp() {
     loyalty && { to: 'award', icon: <QrCode size={18} />, label: tr('Award points', 'منح النقاط') },
     loyalty && { to: 'scan', icon: <ScanLine size={18} />, label: tr('Scan voucher', 'مسح قسيمة') },
     cfg.modules.reservations && { to: 'bookings', icon: <CalendarDays size={18} />, label: tr('Bookings', 'الحجوزات') },
+    cfg.modules.ordering && { to: 'menu', icon: <Ban size={18} />, label: tr('Sold out', 'نفد') },
   ].filter(Boolean) as { to: string; end?: boolean; icon: JSX.Element; label: string; badge?: number }[];
 
   return (
@@ -44,6 +45,7 @@ export default function StaffApp() {
             <Route path="award" element={<AwardPoints />} />
             <Route path="scan" element={<ScanVoucher />} />
             <Route path="bookings" element={<Bookings />} />
+            <Route path="menu" element={<SoldOut />} />
           </Routes>
         </div>
       </div>
@@ -87,6 +89,12 @@ function Board() {
       fresh.forEach((o) => seen.current.add(o.id));
     }
   }, [cols.new, tr]);
+  const [muted, setMuted] = useState(() => sessionStorage.getItem('chime-muted') === '1');
+  useEffect(() => {
+    if (muted || !cols.new.length) return;
+    const t = setInterval(beep, 20000);
+    return () => clearInterval(t);
+  }, [muted, cols.new.length]);
 
   const { cfg, update } = useDemo();
   const paused = cfg.business.ordersPaused;
@@ -95,6 +103,11 @@ function Board() {
   return (
     <>
       <div className="flex flex-wrap items-center gap-2 mb-3">
+        <button onClick={() => { const v = !muted; setMuted(v); sessionStorage.setItem('chime-muted', v ? '1' : '0'); }}
+          className={cx('inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold border', muted ? 'bg-white border-gray-200 text-gray-500' : 'bg-amber-100 border-amber-200 text-amber-900')}
+          title={tr('New orders chime every 20 seconds until accepted', 'ترن الطلبات الجديدة كل 20 ثانية حتى قبولها')}>
+          {muted ? <VolumeX size={15} /> : <Volume2 size={15} />} {muted ? tr('Chime off', 'الرنين متوقف') : tr('Chime on', 'الرنين يعمل')}
+        </button>
         <button onClick={() => update((d) => void (d.config.business.ordersPaused = !paused))}
           className={cx('inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold border', paused ? 'bg-rose-600 text-white border-rose-600' : 'bg-white border-gray-200')}>
           <PauseCircle size={15} /> {paused ? tr('Orders paused — tap to resume', 'الطلبات متوقفة — اضغط للاستئناف') : tr('Pause new orders', 'أوقف الطلبات الجديدة')}
@@ -134,7 +147,10 @@ function printTicket(o: Order, cfg: { business: { name: { en: string; ar?: strin
 }
 
 export function OrderTicket({ o, compact }: { o: Order; compact?: boolean }) {
-  const { cfg, tr, tl, m, lang, update, terms, data } = useDemo();
+  const { demo, cfg, tr, tl, m, lang, update, terms, data } = useDemo();
+  const [rejecting, setRejecting] = useState(false);
+  const [dispatching, setDispatching] = useState(false);
+  const suggested = o.fulfillment === 'delivery' ? suggestRider(demo, o.branchId) : undefined;
   const nx = nextStatus(o);
   const isMe = o.customerId === data.meId;
   const actionLabel: Partial<Record<OrderStatus, string>> = {
@@ -174,18 +190,108 @@ export function OrderTicket({ o, compact }: { o: Order; compact?: boolean }) {
         <button onClick={() => printTicket(o, cfg, tl, m)} className="ms-auto me-2 h-8 w-8 grid place-items-center rounded-full hover:bg-gray-100 text-gray-500" title="Print"><Printer size={15} /></button>
         {o.paid ? <Badge className="bg-emerald-100 text-emerald-800">{tr('Paid', 'مدفوع')}</Badge> : <Badge className="bg-amber-100 text-amber-800"><Banknote size={12} /> {tr('Collect', 'تحصيل')}</Badge>}
       </div>
+      {o.riderId && o.status === 'outForDelivery' && (
+        <div className="mt-2 text-xs flex items-center gap-1.5 text-cyan-800"><Bike size={13} /> {data.riders.find((r) => r.id === o.riderId)?.name} {o.payment === 'cash' && (o.collected ? tr('· cash collected', '· تم استلام النقود') : tr('· to collect', '· للتحصيل'))}</div>
+      )}
+      {!o.paid && o.payment === 'cash' && o.fulfillment !== 'delivery' && <ChangeCalc total={o.total} />}
       {nx && o.status !== 'cancelled' && (
         <div className="flex gap-2 mt-3">
           {o.status === 'pending' && (
-            <Button size="sm" variant="outline" className="!text-rose-600" icon={<X size={15} />} onClick={() => update((d) => setOrderStatus(d, o.id, 'cancelled'))}>{tr('Reject', 'رفض')}</Button>
+            <Button size="sm" variant="outline" className="!text-rose-600" icon={<X size={15} />} onClick={() => setRejecting(true)}>{tr('Reject', 'رفض')}</Button>
           )}
-          <Button size="sm" block icon={<Check size={15} />} onClick={() => {
-            update((d) => setOrderStatus(d, o.id, nx));
-            if (nx === 'completed' && isMe && (cfg.modules.loyaltyPoints || cfg.modules.loyaltyStamps)) toast(tr('Done — loyalty points sent to the customer', 'تم — أُرسلت نقاط الولاء للزبون'));
-          }}>{actionLabel[nx]}</Button>
+          {nx === 'outForDelivery' && o.fulfillment === 'delivery' ? (
+            <Button size="sm" block icon={<Bike size={15} />} onClick={() => setDispatching(true)}>{tr('Send rider', 'أرسل سائقاً')}</Button>
+          ) : (
+            <Button size="sm" block icon={<Check size={15} />} onClick={() => {
+              update((d) => setOrderStatus(d, o.id, nx));
+              if (nx === 'completed' && isMe && (cfg.modules.loyaltyPoints || cfg.modules.loyaltyStamps)) toast(tr('Done — loyalty points sent to the customer', 'تم — أُرسلت نقاط الولاء للزبون'));
+            }}>{actionLabel[nx]}</Button>
+          )}
         </div>
       )}
+      <Modal open={rejecting} onClose={() => setRejecting(false)} title={tr(`Reject #${o.number}: why?`, `رفض #${o.number}: لماذا؟`)} size="sm">
+        <p className="text-sm text-gray-500 mb-3">{tr('The reason is saved, so the owner sees why orders are lost.', 'يُحفظ السبب ليرى المالك لماذا تضيع الطلبات.')}</p>
+        <div className="grid gap-2">
+          {(Object.keys(LOST_REASONS) as LostReason[]).filter((k) => k !== 'customer').map((k) => (
+            <Button key={k} variant="outline" onClick={() => { update((d) => rejectOrder(d, o.id, k)); setRejecting(false); }}>{tl(LOST_REASONS[k])}</Button>
+          ))}
+        </div>
+      </Modal>
+      <Modal open={dispatching} onClose={() => setDispatching(false)} title={tr(`Send #${o.number} with…`, `أرسل #${o.number} مع…`)} size="sm">
+        <div className="space-y-2">
+          {data.riders.filter((r) => r.active).map((r) => {
+            const busy = riderActive(demo, r.id).length;
+            const best = suggested?.id === r.id;
+            return (
+              <button key={r.id} disabled={!r.onShift} onClick={() => { update((d) => assignRider(d, o.id, r.id)); setDispatching(false); toast(tr(`${r.name} is on the way`, `${r.name} في الطريق`)); }}
+                className={cx('w-full flex items-center gap-3 rounded-app border p-3 text-start disabled:opacity-40', best ? 'border-brand bg-brand/5' : 'border-gray-200')}>
+                <span className="h-10 w-10 rounded-full bg-brand text-onbrand grid place-items-center font-bold">{r.name[0]}</span>
+                <span className="flex-1">
+                  <span className="block font-semibold">{r.name} {best && <Badge className="bg-emerald-100 text-emerald-800 ms-1">{tr('Suggested', 'مقترح')}</Badge>}</span>
+                  <span className="block text-xs text-gray-500">{!r.onShift ? tr('Off shift', 'خارج المناوبة') : busy ? tr(`${busy} on the way`, `${busy} في الطريق`) : tr('Free now', 'متاح الآن')}</span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </Modal>
     </Card>
+  );
+}
+
+/** Cash at the counter: type what the customer hands over, see the change. */
+function ChangeCalc({ total }: { total: number }) {
+  const { demo, cfg, tr, m } = useDemo();
+  const [open, setOpen] = useState(false);
+  const [given, setGiven] = useState('');
+  const g = parseFloat(given) || 0;
+  const lbp = dualPrice(demo, total);
+  if (!open) return <button onClick={() => setOpen(true)} className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-gray-600"><Calculator size={13} /> {tr('Change calculator', 'حاسبة الباقي')}</button>;
+  return (
+    <div className="mt-2 rounded-lg bg-gray-50 p-2.5 text-sm">
+      <div className="flex items-center justify-between"><span>{tr('To pay', 'المطلوب')}</span><b>{m(total)}{lbp ? ` · ${lbp.toLocaleString()} ${cfg.dual.currency}` : ''}</b></div>
+      <div className="flex gap-1.5 mt-2">
+        {[total, 20, 50, 100].filter((v, i, a) => a.indexOf(v) === i && v >= total).map((v) => <button key={v} onClick={() => setGiven(String(v))} className="flex-1 rounded-md bg-white border px-2 py-1 text-xs font-semibold">{m(v)}</button>)}
+      </div>
+      <Input type="number" value={given} onChange={(e) => setGiven(e.target.value)} placeholder={tr('Cash received', 'المبلغ المستلم')} className="!h-9 mt-2" />
+      {g >= total && <div className="mt-1.5 font-bold text-emerald-700">{tr('Change to give', 'الباقي')}: {m(Math.round((g - total) * 100) / 100)}</div>}
+    </div>
+  );
+}
+
+/** One tap to mark a dish sold out at this branch for today. */
+function SoldOut() {
+  const { data, cfg, tr, tl, update } = useDemo();
+  const [branch, setBranch] = useState(cfg.branches[0]?.id ?? '');
+  const [q, setQ] = useState('');
+  const list = data.products.filter((p) => p.active && (!q || tl(p.name).toLowerCase().includes(q.toLowerCase())));
+  return (
+    <div className="max-w-2xl mx-auto">
+      <div className="flex flex-wrap gap-2 mb-3">
+        {cfg.branches.length > 1 && (
+          <select value={branch} onChange={(e) => setBranch(e.target.value)} className="h-10 rounded-app border border-gray-200 bg-white px-3 text-sm">
+            {cfg.branches.map((b) => <option key={b.id} value={b.id}>{tl(b.name)}</option>)}
+          </select>
+        )}
+        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={tr('Search', 'ابحث')} className="!h-10 flex-1" />
+      </div>
+      <Card className="divide-y divide-gray-100">
+        {list.map((p) => {
+          const out = !productAvailable(p, branch);
+          return (
+            <div key={p.id} className="flex items-center gap-3 p-3">
+              <Thumb emoji={p.emoji} image={p.image} bg={p.bg} size="sm" className="!h-10 !w-10 !text-xl" />
+              <span className={cx('flex-1 font-medium', out && 'text-gray-400 line-through')}>{tl(p.name)}</span>
+              <span className={cx('text-xs font-semibold', out ? 'text-rose-600' : 'text-emerald-700')}>{out ? tr('Sold out', 'نفد') : tr('Available', 'متوفر')}</span>
+              <Toggle checked={!out} onChange={(v) => update((d) => {
+                const x = d.data.products.find((y) => y.id === p.id)!;
+                x.soldOutAt = v ? (x.soldOutAt ?? []).filter((b) => b !== branch) : [...(x.soldOutAt ?? []), branch];
+              })} />
+            </div>
+          );
+        })}
+      </Card>
+    </div>
   );
 }
 

@@ -13,6 +13,15 @@ export const PLATFORM = {
   /** WhatsApp number for the "Talk to us" buttons (digits only, with country code) */
   salesWhatsApp: '96100000000',
   salesEmail: 'hello@example.com',
+  /**
+   * Your two offers. ⚠️ PLACEHOLDER PRICES — set your real prices before showing clients.
+   * Shown on the landing page, the commission calculator and each client's plan.
+   */
+  plans: {
+    currency: 'USD',
+    native: { price: 100, per: 'branch / month', setup: 0 },
+    pwa: { price: 50, per: 'branch / month', setup: 0 },
+  },
   /** How long a generated demo stays open */
   trialDays: 14,
   /**

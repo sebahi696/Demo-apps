@@ -7,6 +7,7 @@ import { PLATFORM } from '../platform.config';
 import { LangToggle } from '../components/LangToggle';
 import { Button } from '../components/ui';
 import { fmtDate } from '../lib/utils';
+import { PlanCards, CommissionCalc } from '../components/Plans';
 
 export default function Landing() {
   const { tr, tl, lang } = useI18n();
@@ -77,6 +78,18 @@ export default function Landing() {
               <div className="text-gray-600 mt-1">{s.d}</div>
             </div>
           ))}
+        </div>
+
+        <div className="mt-20">
+          <h2 className="text-2xl font-extrabold text-center">{tr('What is delivery-app commission costing you?', 'كم تكلّفك عمولة تطبيقات التوصيل؟')}</h2>
+          <p className="text-center text-gray-500 mt-1 mb-8">{tr('Move the sliders to your numbers.', 'حرّك المؤشرات حسب أرقامك.')}</p>
+          <CommissionCalc />
+        </div>
+
+        <div className="mt-20">
+          <h2 className="text-2xl font-extrabold text-center">{tr('Two ways to launch', 'طريقتان للإطلاق')}</h2>
+          <p className="text-center text-gray-500 mt-1 mb-8">{tr('Same features. Pick how your customers get it.', 'نفس الميزات. اختر كيف يحصل عليه زبائنك.')}</p>
+          <PlanCards />
         </div>
 
         {demos.length > 0 && (

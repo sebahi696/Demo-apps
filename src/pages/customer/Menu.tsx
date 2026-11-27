@@ -94,8 +94,8 @@ export default function Menu() {
 }
 
 function ProductRow({ p, onOpen }: { p: Product; onOpen: () => void }) {
-  const { tl, m, tr, data } = useDemo();
-  const ok = productAvailable(p);
+  const { tl, m, m2, tr, data, branchId } = useDemo();
+  const ok = productAvailable(p, branchId);
   return (
     <button onClick={onOpen} className={cx('w-full flex gap-3 rounded-app bg-white border border-gray-100 p-2.5 text-start shadow-sm', !ok && 'opacity-60')}>
       <Thumb emoji={p.emoji} image={p.image} bg={p.bg} size="md" />
@@ -108,7 +108,7 @@ function ProductRow({ p, onOpen }: { p: Product; onOpen: () => void }) {
         {p.tags?.length > 0 && <div className="text-[11px] mt-0.5">{p.tags.slice(0, 3).map((t) => TAGS[t]?.icon).join(' ')}</div>}
         <div className="text-xs text-gray-500 line-clamp-2 mt-0.5">{tl(p.desc)}</div>
         <div className="flex items-center justify-between mt-1.5">
-          <span className="font-bold text-sm">{m(p.price)}{p.compareAt && p.compareAt > p.price && <span className="ms-1.5 text-xs text-gray-400 line-through font-normal">{m(p.compareAt)}</span>}</span>
+          <span className="font-bold text-sm">{m(p.price)}{p.compareAt && p.compareAt > p.price && <span className="ms-1.5 text-xs text-gray-400 line-through font-normal">{m(p.compareAt)}</span>}{m2(p.price) && <span className="block text-[11px] font-medium text-gray-400">{m2(p.price)}</span>}</span>
           {ok ? (
             <span className="h-8 w-8 rounded-full bg-brand text-onbrand grid place-items-center"><Plus size={18} /></span>
           ) : (
@@ -121,7 +121,7 @@ function ProductRow({ p, onOpen }: { p: Product; onOpen: () => void }) {
 }
 
 export function ProductSheet({ p, onClose }: { p: Product; onClose: () => void }) {
-  const { tl, tr, m, update, data } = useDemo();
+  const { tl, tr, m, m2, update, data, branchId } = useDemo();
   const fav = data.favorites.includes(p.id);
   const alert = data.stockAlerts.includes(p.id);
   const [qty, setQty] = useState(1);
@@ -129,7 +129,7 @@ export function ProductSheet({ p, onClose }: { p: Product; onClose: () => void }
     Object.fromEntries(p.groups.map((g) => [g.id, g.required && !g.multi ? [g.options[0].id] : []])),
   );
   const [note, setNote] = useState('');
-  const ok = productAvailable(p);
+  const ok = productAvailable(p, branchId);
   const optionIds = Object.values(sel).flat();
   const unit = p.price + p.groups.flatMap((g) => g.options).filter((o) => optionIds.includes(o.id)).reduce((s, o) => s + o.priceDelta, 0);
   const missing = p.groups.filter((g) => g.required && !sel[g.id]?.length);
@@ -169,6 +169,7 @@ export function ProductSheet({ p, onClose }: { p: Product; onClose: () => void }
         </div>
         <div className="text-end">
           <div className="font-bold text-lg">{m(p.price)}</div>
+          {m2(p.price) && <div className="text-xs text-gray-400">{m2(p.price)}</div>}
           {p.compareAt && p.compareAt > p.price && <div className="text-sm text-gray-400 line-through">{m(p.compareAt)}</div>}
         </div>
       </div>

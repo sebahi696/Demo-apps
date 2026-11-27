@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
-  User, ChefHat, LayoutDashboard, ListChecks, MoreHorizontal, Share2, Zap, Download, RotateCcw, FileText, Home, Check, X, ChevronRight, Lock, MessageCircle,
+  User, ChefHat, LayoutDashboard, Bike, ListChecks, MoreHorizontal, Share2, Zap, Download, RotateCcw, FileText, Home, Check, X, ChevronRight, Lock, MessageCircle,
 } from 'lucide-react';
 import { useStore, toast } from '../lib/store';
 import { DemoIdContext, useDemo } from '../lib/demo';
@@ -19,6 +19,7 @@ import { PlanSummary } from '../components/PlanSummary';
 import CustomerApp from './customer/CustomerApp';
 import StaffApp from './staff/StaffApp';
 import OwnerApp from './owner/OwnerApp';
+import RiderApp from './rider/RiderApp';
 
 export default function DemoLayout() {
   const { id = '' } = useParams();
@@ -53,7 +54,7 @@ function DemoShell() {
   const [params, setParams] = useSearchParams();
   const setLang = useStore((s) => s.setLang);
   const [tourOpen, setTourOpen] = useState(false);
-  const role: Role = loc.pathname.includes('/staff') ? 'staff' : loc.pathname.includes('/owner') ? 'owner' : 'customer';
+  const role: Role = loc.pathname.includes('/staff') ? 'staff' : loc.pathname.includes('/rider') ? 'rider' : loc.pathname.includes('/owner') ? 'owner' : 'customer';
 
   useEffect(() => {
     applyTheme(cfg.brand, lang);
@@ -108,6 +109,7 @@ function DemoShell() {
             <Route path="app/*" element={<CustomerApp />} />
             <Route path="claim/:token" element={<Claim />} />
             <Route path="staff/*" element={<StaffApp />} />
+            <Route path="rider/*" element={<RiderApp />} />
             <Route path="owner/*" element={<OwnerApp />} />
             <Route path="*" element={<Navigate to="app" replace />} />
           </Routes>
@@ -176,12 +178,13 @@ function DemoBar({ role, onTour }: { role: Role; onTour: () => void }) {
 
   const go = (r: Role) => {
     if (r === 'staff' && !staffOk.current) return setPin(true);
-    nav(r === 'customer' ? `${base}/app` : r === 'staff' ? `${base}/staff` : `${base}/owner`);
+    nav(r === 'customer' ? `${base}/app` : r === 'staff' ? `${base}/staff` : r === 'rider' ? `${base}/rider` : `${base}/owner`);
   };
 
   const roles: { r: Role; icon: JSX.Element; label: string }[] = [
     { r: 'customer', icon: <User size={16} />, label: tr('Customer', 'الزبون') },
     { r: 'staff', icon: <ChefHat size={16} />, label: tr('Staff', 'الموظف') },
+    ...(cfg.modules.delivery ? [{ r: 'rider' as Role, icon: <Bike size={16} />, label: tr('Rider', 'السائق') }] : []),
     { r: 'owner', icon: <LayoutDashboard size={16} />, label: tr('Owner', 'المالك') },
   ];
 
@@ -346,6 +349,8 @@ export function useTourItems() {
         m.ordering && { key: 'addToCart', role: 'customer', to: 'app/menu', label: tr(`Browse the ${tl(terms.catalog).toLowerCase()} and add to cart`, `تصفّح ${tl(terms.catalog)} وأضف إلى السلة`) },
         m.ordering && { key: 'placeOrder', role: 'customer', to: 'app/cart', label: tr('Check out and place an order', 'أكمل الدفع وقدّم الطلب') },
         m.ordering && { key: 'staffAccept', role: 'staff', to: 'staff', label: tr('As staff, accept the new order', 'كموظف، اقبل الطلب الجديد') },
+        m.delivery && { key: 'dispatch', role: 'staff', to: 'staff', label: tr('Send a rider with a delivery order', 'أرسل سائقاً مع طلب توصيل') },
+        m.delivery && { key: 'riderCash', role: 'rider', to: 'rider', label: tr('As the rider, collect the cash and deliver', 'كسائق، استلم النقود وسلّم الطلب') },
         loyalty && { key: 'claimQr', role: 'staff', to: 'staff/award', label: tr('Award points with a staff QR, then claim it', 'امنح النقاط برمز QR ثم استلمها') },
         m.loyaltyPoints && { key: 'redeemReward', role: 'customer', to: 'app/rewards', label: tr('Redeem a reward with your points', 'استبدل مكافأة بنقاطك') },
         loyalty && { key: 'staffVoucher', role: 'staff', to: 'staff/scan', label: tr('As staff, scan the reward voucher', 'كموظف، امسح قسيمة المكافأة') },
@@ -363,7 +368,7 @@ function TourPanel({ onClose }: { onClose: () => void }) {
   const nav = useNavigate();
   const items = useTourItems();
   const done = items.filter((t) => data.tour[t.key]).length;
-  const roleIcon = { customer: <User size={13} />, staff: <ChefHat size={13} />, owner: <LayoutDashboard size={13} /> };
+  const roleIcon = { customer: <User size={13} />, staff: <ChefHat size={13} />, rider: <Bike size={13} />, owner: <LayoutDashboard size={13} /> };
   return (
     <div className="no-print absolute z-40 bottom-3 end-3 start-3 sm:start-auto sm:w-[340px] rounded-3xl bg-white shadow-2xl border border-gray-200 overflow-hidden animate-[up_.2s_ease]">
       <div className="bg-gray-950 text-white px-4 py-3 flex items-center gap-3">

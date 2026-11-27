@@ -7,6 +7,7 @@ import { addToCart, flowFor, productAvailable, setOrderStatus, statusLabel, stat
 import { fmtDate, fmtTime, timeAgo } from '../../lib/utils';
 import { Button, Empty, Thumb, cx, Input } from '../../components/ui';
 import { Screen } from './CustomerApp';
+import { LiveMap, etaMinutes } from '../../components/LiveMap';
 
 export function Orders() {
   const { data, tr, tl, m, cfg, lang, terms } = useDemo();
@@ -80,6 +81,24 @@ export function OrderDetail() {
         )}
         <div className="absolute -end-4 -bottom-6 text-8xl opacity-20">{o.items[0]?.emoji}</div>
       </div>
+
+      {o.status === 'outForDelivery' && o.riderId && (() => {
+        const r = data.riders.find((x) => x.id === o.riderId);
+        const eta = etaMinutes(o, cfg.fulfillment.zones.find((z) => z.id === o.zoneId)?.eta ?? 30);
+        return (
+          <div className="mt-4 rounded-app bg-white border border-gray-100 overflow-hidden">
+            <LiveMap orders={[o]} riders={data.riders} height={180} />
+            <div className="flex items-center gap-3 p-3">
+              <span className="h-11 w-11 rounded-full bg-brand text-onbrand grid place-items-center font-bold">{r?.name[0]}</span>
+              <div className="flex-1">
+                <div className="font-semibold">{r?.name}</div>
+                <div className="text-xs text-gray-500">{tr(`Arriving in about ${eta} min`, `يصل خلال ${eta} دقيقة تقريباً`)}</div>
+              </div>
+              <a href={`tel:${r?.phone}`} className="h-10 w-10 rounded-full bg-gray-100 grid place-items-center"><Phone size={17} /></a>
+            </div>
+          </div>
+        );
+      })()}
 
       {!cancelled && (
         <div className="mt-4 rounded-app bg-white border border-gray-100 p-4">

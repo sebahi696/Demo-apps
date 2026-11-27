@@ -5,6 +5,7 @@ import { PRESETS } from '../lib/presets';
 import { fmtDate } from '../lib/utils';
 import { PLATFORM } from '../platform.config';
 import { Button, Card } from './ui';
+import { PlanCards } from './Plans';
 
 export const MODULE_LABELS: Record<ModuleKey, { en: string; ar: string }> = {
   ordering: { en: 'Online ordering', ar: 'الطلب أونلاين' },
@@ -43,6 +44,9 @@ const ACTIVITY: Record<string, { en: string; ar: string }> = {
   referral: { en: 'Used referrals', ar: 'استخدام الإحالات' },
   favorite: { en: 'Saved favorites', ar: 'حفظ المفضلة' },
   tableQr: { en: 'Ordered from a table QR', ar: 'الطلب من QR الطاولة' },
+  dispatch: { en: 'Sent riders', ar: 'إرسال السائقين' },
+  riderCash: { en: 'Collected cash as rider', ar: 'تحصيل النقود كسائق' },
+  settle: { en: 'Settled rider cash', ar: 'تسوية نقود السائقين' },
 };
 
 export const PAY_LABEL: Record<PaymentKey, { en: string; ar: string }> = {
@@ -123,8 +127,13 @@ export function PlanSummary({ demo, showCta = true, productsAdded }: { demo: Dem
         </Card>
       )}
 
+      <div>
+        <div className="font-bold mb-3">{tr('Your launch options', 'خيارات الإطلاق')}</div>
+        <PlanCards chosen={/store|App Store/i.test(c.lead.answers.appType ?? '') ? 'native' : /PWA|ويب/i.test(c.lead.answers.appType ?? '') ? 'pwa' : undefined} />
+      </div>
+
       {showCta && (
-        <Card className="p-5 bg-gray-900 text-white border-0 no-print">
+        <Card className="p-5 !bg-gray-900 text-white !border-0 no-print">
           <div className="text-lg font-bold">{tr('Ready for your real app?', 'جاهز لتطبيقك الحقيقي؟')}</div>
           <p className="text-white/70 text-sm mt-1">{tr('We will redesign the UI around your brand, adjust every feature to how you work, and publish it on the App Store and Google Play under your name.', 'سنعيد تصميم الواجهة حول علامتك، ونعدّل كل ميزة حسب طريقة عملك، وننشره على App Store و Google Play باسمك.')}</p>
           <div className="flex flex-wrap gap-2 mt-4">
