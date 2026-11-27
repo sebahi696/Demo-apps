@@ -137,3 +137,7 @@ Schema `demo_studio` (table `leads`, locked with RLS) plus RPC functions `demo_s
 - Charts follow a colour-blind-checked palette with hover tooltips; the dashboard uses the same charts.
 - Wizard live preview now follows menu style (list/grid/big photos), light/dark, header, cards, fonts and corners, and shows on phones too.
 - Dark mode keeps brand-coloured text readable; product sheet has quantity next to Add; delivery ASAP time includes travel; more room above the cart bar.
+
+## v4.2.1 — live preview fix
+- App design: every change now shows in the preview phone immediately. Two open screens no longer overwrite each other: settings and data are saved with their own revision, the newest wins, and screens that changed nothing don't re-save.
+- The preview phone no longer runs the activity simulation, shows scrollbars or selects text when tapped.

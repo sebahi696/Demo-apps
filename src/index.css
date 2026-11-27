@@ -61,3 +61,7 @@ button { -webkit-tap-highlight-color: transparent; }
 .app-dark .bg-brand\/5, .app-dark .bg-brand\/10 { background-color: color-mix(in srgb, rgb(var(--brand)) 22%, #18181c) !important; }
 /* Pastel product tiles glare at night: tone them down a little. */
 .app-dark [style*="background"].grid.place-items-center { filter: brightness(.82) saturate(.9); }
+/* Inside the owner's live preview phone: no scrollbars, no accidental text selection. */
+.embedded *::-webkit-scrollbar { display: none; }
+.embedded * { scrollbar-width: none; }
+.embedded input, .embedded textarea { user-select: text; }

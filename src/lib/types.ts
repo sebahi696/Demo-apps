@@ -477,4 +477,6 @@ export interface DemoData {
 export interface Demo {
   config: DemoConfig;
   data: DemoData;
+  rev?: number; // last local change to the settings (config)
+  drev?: number; // last local change to the data (orders, points…)
 }

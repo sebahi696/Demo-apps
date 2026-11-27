@@ -19,7 +19,7 @@ export default defineConfig({
   base,
   build: { chunkSizeWarningLimit: 900, outDir: process.env.OUT_DIR || 'dist' },
   resolve: { alias: { '@client': clientFile } },
-  define: { __APP_VERSION__: JSON.stringify('4.2') },
+  define: { __APP_VERSION__: JSON.stringify('4.2.1') },
   plugins: [
     react(),
     {

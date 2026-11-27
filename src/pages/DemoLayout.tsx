@@ -113,7 +113,7 @@ function DemoShell() {
   if (CLIENT_MODE && role !== 'customer' && !EMBEDDED && sessionStorage.getItem('gate-' + role) !== '1') return <ClientGate role={role} onOk={() => setGateTick((x) => x + 1)} />;
 
   return (
-    <div className="h-[100dvh] flex flex-col bg-gray-100">
+    <div className={cx('h-[100dvh] flex flex-col bg-gray-100', EMBEDDED && 'select-none embedded')}>
       {!EMBEDDED && !CLIENT_MODE && <DemoBar role={role} onTour={() => setTourOpen((v) => !v)} />}
       {!EMBEDDED && CLIENT_MODE && role !== 'customer' && <ClientBar role={role} />}
       <div className={cx('flex-1 min-h-0 relative transition-[padding]', tourOpen && !expired && 'xl:pe-[360px]')}>
@@ -160,7 +160,7 @@ function useSimulation() {
   const { id } = useDemo();
   const simulate = useStore((s) => s.simulate);
   useEffect(() => {
-    if (!simulate) return;
+    if (!simulate || EMBEDDED) return; // the preview phone never writes on its own
     const t = setInterval(() => {
       const st = useStore.getState();
       const d = st.demos[id];
